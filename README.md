@@ -1,1 +1,1 @@
-# ccc
+# Claude Code Continue (ccc)
