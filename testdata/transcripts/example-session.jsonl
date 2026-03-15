@@ -1,0 +1,2 @@
+{"type":"user","cwd":"/tmp/example","message":{"role":"user","content":"example query"}}
+{"type":"assistant","cwd":"/tmp/example","message":{"role":"assistant","content":"example answer"}}

@@ -1,0 +1,7 @@
+FROM golang:1.26.1-bookworm
+
+WORKDIR /workspace
+
+RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
+
+CMD ["bash"]

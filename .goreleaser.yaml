@@ -1,0 +1,53 @@
+version: 2
+
+project_name: ccc
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: ccc
+    main: ./cmd/ccc
+    binary: ccc
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+archives:
+  - id: ccc
+    ids:
+      - ccc
+    formats:
+      - tar.gz
+
+checksum:
+  name_template: checksums.txt
+
+brews:
+  - name: ccc
+    directory: Formula
+    repository:
+      owner: "{{ .Env.TAP_OWNER }}"
+      name: "{{ .Env.TAP_NAME }}"
+    homepage: https://github.com/ishiyama0530/ccc
+    description: Fast full-scan Claude Code resume helper
+    license: MIT
+    install: |
+      bin.install "ccc"
+    test: |
+      system "#{bin}/ccc", "--help"
+
+release:
+  github:
+    owner: ishiyama0530
+    name: ccc
+
+changelog:
+  disable: true

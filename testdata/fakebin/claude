@@ -1,0 +1,3 @@
+#!/bin/sh
+pwd > "$CCC_OUTPUT"
+printf '%s\n' "$@" >> "$CCC_OUTPUT"
