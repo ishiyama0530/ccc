@@ -5,6 +5,8 @@
 *.so
 *.dylib
 bin/
+!npm/bin/
+!npm/bin/*.js
 dist/
 
 # Test binary, built with `go test -c`

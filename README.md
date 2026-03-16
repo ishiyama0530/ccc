@@ -6,6 +6,8 @@
 
 ## Install
 
+### Shell installer
+
 Install with:
 
 ```bash
@@ -17,6 +19,17 @@ curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | 
 - Installs `ccc` into `~/.local/bin` by default
 
 If `~/.local/bin` is not on your PATH, add it in your shell config.
+
+
+### npm
+
+```bash
+npm install -g @ishiyama0530/ccc
+```
+
+- Works on macOS / Linux / Windows
+- Supports `amd64` and `arm64`
+- Downloads the matching GitHub Release binary during `postinstall`
 
 To change the install location:
 
@@ -87,4 +100,11 @@ export GITHUB_TOKEN=...
 make release VERSION=vX.Y.Z
 ```
 
-`make release` publishes the GitHub Release assets used by `install.sh`.
+`make release` publishes GitHub Release assets used by both `install.sh` and npm `postinstall`.
+
+To publish to npm as well:
+
+```bash
+npm version <major|minor|patch>
+npm publish
+```

@@ -6,6 +6,8 @@
 
 ## インストール
 
+### シェルインストーラー
+
 まずはこれでインストールできます。
 
 ```bash
@@ -17,6 +19,17 @@ curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | 
 - `ccc` はデフォルトで `~/.local/bin` に入ります。
 
 `~/.local/bin` が PATH に入っていない場合は、シェル設定に追加してください。
+
+
+### npm
+
+```bash
+npm install -g @ishiyama0530/ccc
+```
+
+- macOS / Linux / Windows で利用できます。
+- `amd64` / `arm64` に対応しています。
+- `postinstall` 時に環境に合った GitHub Release バイナリを取得します。
 
 インストール先を変える場合:
 
@@ -87,4 +100,11 @@ export GITHUB_TOKEN=...
 make release VERSION=vX.Y.Z
 ```
 
-`make release` は、`install.sh` が使う GitHub Release を公開します。
+`make release` は、`install.sh` と npm `postinstall` が使う GitHub Release を公開します。
+
+npm へ公開する場合は、続けて次を実行します。
+
+```bash
+npm version <major|minor|patch>
+npm publish
+```

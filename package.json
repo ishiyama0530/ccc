@@ -1,0 +1,27 @@
+{
+  "name": "@ishiyama0530/ccc",
+  "version": "0.0.0",
+  "description": "Speed-first CLI for finding and resuming Claude Code sessions",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ishiyama0530/ccc.git"
+  },
+  "homepage": "https://github.com/ishiyama0530/ccc",
+  "bugs": {
+    "url": "https://github.com/ishiyama0530/ccc/issues"
+  },
+  "bin": {
+    "ccc": "npm/bin/ccc.js"
+  },
+  "files": [
+    "npm/bin",
+    "npm/scripts"
+  ],
+  "scripts": {
+    "postinstall": "node npm/scripts/install.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

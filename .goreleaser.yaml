@@ -15,6 +15,7 @@ builds:
     goos:
       - darwin
       - linux
+      - windows
     goarch:
       - amd64
       - arm64
@@ -28,6 +29,13 @@ archives:
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     formats:
       - tar.gz
+
+  - id: ccc-binary
+    ids:
+      - ccc
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if eq .Os \"windows\" }}.exe{{ end }}"
+    formats:
+      - binary
 
 checksum:
   name_template: checksums.txt
