@@ -47,9 +47,8 @@
 - When changing output behavior, add or update a test that locks stdout/stderr exactly.
 
 ## Release Workflow
-- Homebrew is the only supported distribution channel.
-- Use `make release VERSION=vX.Y.Z TAP_REPO=owner/homebrew-tap`.
-- The command tags and pushes the release tag, then runs GoReleaser to publish GitHub release assets and update the Homebrew tap.
+- Use `make release VERSION=vX.Y.Z`.
+- The command tags and pushes the release tag, then runs GoReleaser to publish the GitHub release assets used by `install.sh`.
 - `GITHUB_TOKEN` must be set before running the release target.
 
 ## Acceptance Checklist

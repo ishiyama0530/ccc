@@ -6,16 +6,35 @@
 
 ## インストール
 
-Homebrew:
+まずはこれでインストールできます。
 
 ```bash
-brew tap owner/homebrew-tap
-brew install ccc
+curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | bash
+```
+
+- 最新の GitHub Release をダウンロードします。
+- 対応環境は macOS / Linux、`amd64` / `arm64` です。
+- `ccc` はデフォルトで `~/.local/bin` に入ります。
+
+`~/.local/bin` が PATH に入っていない場合は、シェル設定に追加してください。
+
+インストール先を変える場合:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | env CCC_INSTALL_DIR="$HOME/bin" bash
+```
+
+バージョンを固定する場合:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | env CCC_INSTALL_VERSION=vX.Y.Z bash
 ```
 
 ## 使い方
 
 ```bash
+ccc
+ccc -d <dir>
 ccc <query>
 ccc -d <dir> <query>
 ccc --dir <dir> <query>
@@ -23,6 +42,7 @@ ccc --dir <dir> <query>
 
 - デフォルトでは、現在の作業ディレクトリに対応する Claude 履歴を検索します。
 - `-d` / `--dir` で検索対象の作業ディレクトリを切り替えます。
+- クエリを省略すると、対象ディレクトリの全セッション履歴を一覧表示します。
 - 検索は大文字小文字を区別しません。
 - 一致が見つかると TUI を開きます。
 - 追加引数は下部のコマンドバーに入力します。`claude --resume <session_id>` は固定で、その後ろに引数を追加します。
@@ -32,13 +52,16 @@ ccc --dir <dir> <query>
 例:
 
 ```bash
+ccc
 ccc bug
+ccc -d ~/src/app
 ccc -d ~/src/app timeout
 ```
 
 ## キー操作
 
 - `↑` / `↓`: 移動
+- `Shift+↑` / `Shift+↓`: プレビューを1行ずつスクロール
 - `Enter`: 選択したセッションを再開
 - 文字入力: 追加引数を入力
 - `Backspace`: 追加引数を編集
@@ -61,5 +84,7 @@ PATH="$PWD/bin:$PATH" ccc bug
 
 ```bash
 export GITHUB_TOKEN=...
-make release VERSION=vX.Y.Z TAP_REPO=owner/homebrew-tap
+make release VERSION=vX.Y.Z
 ```
+
+`make release` は、`install.sh` が使う GitHub Release を公開します。

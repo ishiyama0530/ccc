@@ -12,17 +12,36 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRunReturnsUsageErrorWithoutQuery(t *testing.T) {
+func TestRunSearchesAllHistoryWithoutQuery(t *testing.T) {
 	t.Parallel()
 
-	service := Service{}
+	searcher := &stubSearcher{
+		results: []session.Candidate{{SessionID: "abc-123", TranscriptPath: "/tmp/abc-123.jsonl", CWD: "/projects/one", CanResume: true}},
+	}
+	picker := &stubPicker{
+		selected: resume.Request{
+			Candidate: session.Candidate{SessionID: "abc-123", CWD: "/projects/one", CanResume: true},
+		},
+	}
+	runner := &stubRunner{}
+	service := Service{
+		Searcher: searcher,
+		Picker:   picker,
+		Runner:   runner,
+		IsTTY: func() bool {
+			return true
+		},
+	}
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 
-	code := service.Run(context.Background(), []string{}, stdout, stderr)
-	require.Equal(t, 2, code)
+	code := service.Run(context.Background(), []string{"-d", "/target/project"}, stdout, stderr)
+	require.Equal(t, 0, code)
 	require.Empty(t, stdout.String())
-	require.Contains(t, stderr.String(), "usage")
+	require.Empty(t, stderr.String())
+	require.Equal(t, []string{"/target/project|"}, searcher.calls)
+	require.True(t, picker.called)
+	require.True(t, runner.called)
 }
 
 func TestRunUsesPickerForSingleCandidateOnTTY(t *testing.T) {

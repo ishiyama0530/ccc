@@ -19,7 +19,7 @@ type Picker struct {
 
 func (picker Picker) Pick(candidates []session.Candidate) (resume.Request, error) {
 	model := NewModel(candidates, picker.Loader)
-	options := make([]tea.ProgramOption, 0, 4)
+	options := make([]tea.ProgramOption, 0, 3)
 	options = append(options, tea.WithAltScreen())
 	options = append(options, tea.WithMouseCellMotion())
 	if picker.Input != nil {

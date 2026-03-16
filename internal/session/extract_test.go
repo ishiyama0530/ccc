@@ -89,6 +89,39 @@ func TestExtractCandidateRetainsCandidateWithoutCWD(t *testing.T) {
 	require.Empty(t, candidate.CWD)
 }
 
+func TestExtractCandidateMatchesAllNaturalLanguageMessagesWhenQueryIsEmpty(t *testing.T) {
+	t.Parallel()
+
+	transcript := strings.NewReader(strings.Join([]string{
+		`{"type":"user","cwd":"/tmp/project","message":{"role":"user","content":"first message"}}`,
+		`{"type":"assistant","cwd":"/tmp/project","message":{"role":"assistant","content":"second message"}}`,
+	}, "\n"))
+
+	candidate, matched, err := ExtractCandidate("/tmp/all-history.jsonl", transcript, "")
+	require.NoError(t, err)
+	require.True(t, matched)
+	require.True(t, candidate.CanResume)
+	require.Equal(t, 2, candidate.HitCount)
+	require.Equal(t, "first message", candidate.Preview)
+	require.Equal(t, "", candidate.SearchQuery)
+}
+
+func TestExtractCandidateMatchesResumeableTranscriptWithoutMessagesWhenQueryIsEmpty(t *testing.T) {
+	t.Parallel()
+
+	transcript := strings.NewReader(strings.Join([]string{
+		`{"type":"progress","cwd":"/tmp/project","message":{"role":"assistant","content":"ignore progress"}}`,
+		`{"type":"file-history-snapshot","cwd":"/tmp/project"}`,
+	}, "\n"))
+
+	candidate, matched, err := ExtractCandidate("/tmp/no-messages.jsonl", transcript, "")
+	require.NoError(t, err)
+	require.True(t, matched)
+	require.True(t, candidate.CanResume)
+	require.Equal(t, 0, candidate.HitCount)
+	require.Empty(t, candidate.Preview)
+}
+
 func TestExtractCandidateReturnsNoMatchWhenOnlyNoiseMatches(t *testing.T) {
 	t.Parallel()
 

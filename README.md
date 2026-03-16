@@ -6,16 +6,35 @@
 
 ## Install
 
-Homebrew:
+Install with:
 
 ```bash
-brew tap owner/homebrew-tap
-brew install ccc
+curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | bash
+```
+
+- Downloads the latest GitHub Release
+- Supports macOS / Linux on `amd64` / `arm64`
+- Installs `ccc` into `~/.local/bin` by default
+
+If `~/.local/bin` is not on your PATH, add it in your shell config.
+
+To change the install location:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | env CCC_INSTALL_DIR="$HOME/bin" bash
+```
+
+To pin a version:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | env CCC_INSTALL_VERSION=vX.Y.Z bash
 ```
 
 ## Use
 
 ```bash
+ccc
+ccc -d <dir>
 ccc <query>
 ccc -d <dir> <query>
 ccc --dir <dir> <query>
@@ -23,6 +42,7 @@ ccc --dir <dir> <query>
 
 - By default, `ccc` searches the Claude history for the current working directory.
 - `-d` / `--dir` switches the target working directory.
+- With no query, `ccc` lists all session history for the target directory.
 - Search is case-insensitive.
 - If matches are found, `ccc` opens the TUI.
 - Extra Claude args are typed into the bottom command bar. `ccc` always keeps `claude --resume <session_id>` fixed and appends your args after it.
@@ -32,13 +52,16 @@ ccc --dir <dir> <query>
 Examples:
 
 ```bash
+ccc
 ccc bug
+ccc -d ~/src/app
 ccc -d ~/src/app timeout
 ```
 
 ## Keys
 
 - `↑` / `↓`: move
+- `Shift+↑` / `Shift+↓`: scroll preview line by line
 - `Enter`: resume the selected session
 - Type text: add extra Claude args
 - `Backspace`: edit extra args
@@ -61,5 +84,7 @@ PATH="$PWD/bin:$PATH" ccc bug
 
 ```bash
 export GITHUB_TOKEN=...
-make release VERSION=vX.Y.Z TAP_REPO=owner/homebrew-tap
+make release VERSION=vX.Y.Z
 ```
+
+`make release` publishes the GitHub Release assets used by `install.sh`.

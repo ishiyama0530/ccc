@@ -14,6 +14,7 @@ builds:
       - CGO_ENABLED=0
     goos:
       - darwin
+      - linux
     goarch:
       - amd64
       - arm64
@@ -24,25 +25,12 @@ archives:
   - id: ccc
     ids:
       - ccc
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     formats:
       - tar.gz
 
 checksum:
   name_template: checksums.txt
-
-brews:
-  - name: ccc
-    directory: Formula
-    repository:
-      owner: "{{ .Env.TAP_OWNER }}"
-      name: "{{ .Env.TAP_NAME }}"
-    homepage: https://github.com/ishiyama0530/ccc
-    description: Fast full-scan Claude Code resume helper
-    license: MIT
-    install: |
-      bin.install "ccc"
-    test: |
-      system "#{bin}/ccc", "--help"
 
 release:
   github:

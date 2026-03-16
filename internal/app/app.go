@@ -34,10 +34,6 @@ func (service Service) Run(ctx context.Context, args []string, stdout io.Writer,
 	}
 
 	query := strings.TrimSpace(strings.Join(flagSet.Args(), " "))
-	if query == "" {
-		fmt.Fprintln(stderr, "usage: ccc [-d DIR|--dir DIR] <query>")
-		return 2
-	}
 
 	root := strings.TrimSpace(*searchDir)
 	if root == "" {

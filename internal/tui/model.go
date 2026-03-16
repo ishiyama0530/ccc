@@ -1,21 +1,23 @@
 package tui
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ishiyama0530/ccc/internal/resume"
 	"github.com/ishiyama0530/ccc/internal/session"
+	"github.com/mattn/go-runewidth"
 )
 
-const previewWindowSize = 10
 const mouseScrollStep = 3
 const topMarginLines = 1
 const commandPanelHeight = 1
-const commandPanelReservedLines = 3
+const panelBorderLines = 2
 
 var (
 	panelBorderColor             = lipgloss.Color("#4B5563")
@@ -30,6 +32,8 @@ var (
 	inactiveCandidateMetaStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#64748B"))
 	userRoleStyle                = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#1C1400")).Background(lipgloss.Color("#FFB703"))
 	assistantRoleStyle           = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#052A33")).Background(lipgloss.Color("#67E8F9"))
+	searchHitStyle               = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#111827")).Background(lipgloss.Color("#FDE047"))
+	mouseEscapeSequencePattern   = regexp.MustCompile(`^(?:\[?<\d+;\d+;\d+[Mm])+$`)
 )
 
 type DetailLoader interface {
@@ -37,20 +41,21 @@ type DetailLoader interface {
 }
 
 type Model struct {
-	Candidates    []session.Candidate
-	Cursor        int
-	ListOffset    int
-	Selected      resume.Request
-	Done          bool
-	Canceled      bool
-	Width         int
-	Height        int
-	ArgsInput     string
-	ErrorMessage  string
-	Detail        session.Detail
-	DetailError   string
-	PreviewOffset int
-	detailLoader  DetailLoader
+	Candidates        []session.Candidate
+	Cursor            int
+	ListOffset        int
+	Selected          resume.Request
+	Done              bool
+	Canceled          bool
+	Width             int
+	Height            int
+	ArgsInput         string
+	ErrorMessage      string
+	Detail            session.Detail
+	DetailError       string
+	PreviewOffset     int
+	detailLoader      DetailLoader
+	mousePrefixBudget int
 }
 
 func NewModel(candidates []session.Candidate, loader DetailLoader) Model {
@@ -92,6 +97,10 @@ func (model Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		model.moveUp()
 	case tea.KeyDown:
 		model.moveDown()
+	case tea.KeyShiftUp:
+		model.scrollPreview(-1)
+	case tea.KeyShiftDown:
+		model.scrollPreview(1)
 	case tea.KeyPgUp:
 		model.scrollPreview(-model.previewPageSize())
 	case tea.KeyPgDown:
@@ -127,6 +136,9 @@ func (model Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		model.Canceled = true
 		return model, tea.Quit
 	case tea.KeyRunes:
+		if model.shouldIgnoreRunesInput(string(keyMsg.Runes)) {
+			return model, nil
+		}
 		model.appendArgs(string(keyMsg.Runes))
 	}
 
@@ -159,20 +171,13 @@ func (model Model) renderSplitView() string {
 }
 
 func (model *Model) handleMouse(msg tea.MouseMsg) {
-	switch {
-	case model.isPreviewMouse(msg):
+	if model.isPreviewMouse(msg) {
+		model.mousePrefixBudget = 1
 		switch msg.Button {
 		case tea.MouseButtonWheelUp:
 			model.scrollPreview(-mouseScrollStep)
 		case tea.MouseButtonWheelDown:
 			model.scrollPreview(mouseScrollStep)
-		}
-	case model.isListMouse(msg):
-		switch msg.Button {
-		case tea.MouseButtonWheelUp:
-			model.scrollList(-1)
-		case tea.MouseButtonWheelDown:
-			model.scrollList(1)
 		}
 	}
 }
@@ -190,16 +195,6 @@ func (model Model) isPreviewMouse(msg tea.MouseMsg) bool {
 	previewWidth, previewX := model.layoutMetrics()
 	y := msg.Y - topMarginLines
 	return msg.X >= previewX && msg.X < previewX+previewWidth && y >= 0 && y < model.mainPanelHeight()
-}
-
-func (model Model) isListMouse(msg tea.MouseMsg) bool {
-	if !isWheelScrollMsg(msg) {
-		return false
-	}
-
-	_, previewX := model.layoutMetrics()
-	y := msg.Y - topMarginLines
-	return msg.X >= 0 && msg.X < previewX && y >= 0 && y < model.listAreaHeight()
 }
 
 func (model Model) layoutMetrics() (previewWidth int, previewX int) {
@@ -225,7 +220,8 @@ func (model Model) panelHeight() int {
 }
 
 func (model Model) mainPanelHeight() int {
-	return max(1, model.panelHeight()-commandPanelReservedLines)
+	reservedLines := topMarginLines + commandPanelHeight + (panelBorderLines * 2)
+	return max(1, model.panelHeight()-reservedLines)
 }
 
 func (model Model) renderListPanel(width int) string {
@@ -248,14 +244,11 @@ func (model Model) renderListPanel(width int) string {
 }
 
 func (model Model) renderPreviewPanel(width int) string {
-	var builder strings.Builder
-	builder.WriteString(sectionHeaderStyle.Render("preview"))
-	builder.WriteString("\n")
-	for _, line := range model.visiblePreviewLines() {
-		builder.WriteString(line)
-		builder.WriteString("\n")
-	}
-	return builder.String()
+	visible := model.visiblePreviewLines()
+	lines := make([]string, 0, len(visible)+1)
+	lines = append(lines, sectionHeaderStyle.Render("preview"))
+	lines = append(lines, visible...)
+	return strings.Join(lines, "\n")
 }
 
 func (model Model) renderCommandPanel(width int) string {
@@ -297,28 +290,6 @@ func (model *Model) moveDown() {
 	}
 }
 
-func (model *Model) scrollList(delta int) {
-	if len(model.Candidates) == 0 || delta == 0 {
-		return
-	}
-
-	nextCursor := model.Cursor + delta
-	if nextCursor < 0 {
-		nextCursor = 0
-	}
-	if nextCursor >= len(model.Candidates) {
-		nextCursor = len(model.Candidates) - 1
-	}
-	if nextCursor == model.Cursor {
-		return
-	}
-
-	model.Cursor = nextCursor
-	model.PreviewOffset = 0
-	model.loadCurrentDetail()
-	model.ensureCursorVisible()
-}
-
 func (model *Model) appendArgs(value string) {
 	model.ArgsInput += value
 	model.ErrorMessage = ""
@@ -334,7 +305,7 @@ func (model *Model) backspaceArgs() {
 }
 
 func (model *Model) scrollPreview(delta int) {
-	lines := model.previewLines()
+	lines := model.previewDisplayLines()
 	pageSize := model.previewPageSize()
 	if len(lines) <= pageSize {
 		model.PreviewOffset = 0
@@ -386,38 +357,8 @@ func (model *Model) loadCurrentDetail() {
 	model.DetailError = ""
 }
 
-func (model Model) previewLines() []string {
-	detail := model.Detail
-	if detail.Candidate.SessionID == "" && len(model.Candidates) > 0 {
-		detail.Candidate = model.Candidates[model.Cursor]
-	}
-
-	lines := []string{
-		"session_id: " + detail.Candidate.SessionID,
-		"title: " + displayTitle(detail.Candidate),
-		"cwd: " + displayValue(detail.Candidate.CWD),
-		"updated_at: " + formatTime(detail.Candidate.UpdatedAt),
-		"hits: " + strconv.Itoa(detail.Candidate.HitCount),
-		"transcript_path: " + displayValue(detail.Candidate.TranscriptPath),
-	}
-
-	if model.DetailError != "" {
-		lines = append(lines, "detail_error: "+model.DetailError)
-	}
-
-	if len(detail.Messages) > 0 {
-		lines = append(lines, "")
-	}
-
-	for _, message := range detail.Messages {
-		lines = append(lines, renderMessageLine(message))
-	}
-
-	return lines
-}
-
 func (model Model) visiblePreviewLines() []string {
-	lines := model.previewLines()
+	lines := model.previewDisplayLines()
 	pageSize := model.previewPageSize()
 	start := model.PreviewOffset
 	if start >= len(lines) {
@@ -433,11 +374,7 @@ func (model Model) visiblePreviewLines() []string {
 }
 
 func (model Model) previewPageSize() int {
-	pageSize := previewWindowSize
-	if model.mainPanelHeight() > 0 {
-		pageSize = min(pageSize, max(1, model.mainPanelHeight()-5))
-	}
-	return max(1, pageSize)
+	return max(1, model.mainPanelHeight()-1)
 }
 
 func (model Model) listPageSize() int {
@@ -488,14 +425,15 @@ func renderCandidateLine(candidate session.Candidate, active bool, width int) st
 
 	line := markerStyle.Render(marker) + " " + dateStyle.Render(date)
 	if candidate.HitCount > 0 && width >= 24 {
-		line += metaStyle.Render("  " + strconv.Itoa(candidate.HitCount) + " " + pluralize("hit", candidate.HitCount))
+		line += metaStyle.Render("  " + strconv.Itoa(candidate.HitCount) + " " + candidateListMetricLabel(candidate))
 	}
 
 	return line
 }
 
 func renderMessageLine(message session.Message) string {
-	return roleLabelStyle(message.Role).Render("["+message.Role+"]") + " " + message.Text
+	label := displayRoleLabel(message.Role)
+	return roleLabelStyle(message.Role).Render(label) + " " + message.Text
 }
 
 func roleLabelStyle(role string) lipgloss.Style {
@@ -511,6 +449,20 @@ func roleLabelStyle(role string) lipgloss.Style {
 
 func candidateCountLabel(count int) string {
 	return strconv.Itoa(count) + " " + pluralize("session", count)
+}
+
+func candidateMetricPrefix(candidate session.Candidate) string {
+	if candidate.SearchQuery == "" {
+		return "messages: "
+	}
+	return "hits: "
+}
+
+func candidateListMetricLabel(candidate session.Candidate) string {
+	if candidate.SearchQuery == "" {
+		return pluralize("msg", candidate.HitCount)
+	}
+	return pluralize("hit", candidate.HitCount)
 }
 
 func pluralize(word string, count int) string {
@@ -541,6 +493,41 @@ func (model Model) commandPrefix() string {
 	return "claude --resume " + model.Candidates[model.Cursor].SessionID
 }
 
+func (model Model) previewDisplayLines() []string {
+	detail := model.Detail
+	if detail.Candidate.SessionID == "" && len(model.Candidates) > 0 {
+		detail.Candidate = model.Candidates[model.Cursor]
+	}
+
+	width := model.previewContentWidth()
+	lines := make([]string, 0, len(detail.Messages)+8)
+	lines = append(lines, wrapPrefixedPreviewText("session_id: ", detail.Candidate.SessionID, width)...)
+	lines = append(lines, wrapPrefixedPreviewText("title: ", displayTitle(detail.Candidate), width)...)
+	lines = append(lines, wrapPrefixedPreviewText("cwd: ", displayValue(detail.Candidate.CWD), width)...)
+	lines = append(lines, wrapPrefixedPreviewText("updated_at: ", formatTime(detail.Candidate.UpdatedAt), width)...)
+	lines = append(lines, wrapPrefixedPreviewText(candidateMetricPrefix(detail.Candidate), strconv.Itoa(detail.Candidate.HitCount), width)...)
+	lines = append(lines, wrapPrefixedPreviewText("transcript_path: ", displayValue(detail.Candidate.TranscriptPath), width)...)
+
+	if model.DetailError != "" {
+		lines = append(lines, wrapPrefixedPreviewText("detail_error: ", model.DetailError, width)...)
+	}
+
+	if len(detail.Messages) > 0 {
+		lines = append(lines, "")
+	}
+
+	for _, message := range detail.Messages {
+		lines = append(lines, wrapPreviewMessage(message, detail.Candidate.SearchQuery, width)...)
+	}
+
+	return lines
+}
+
+func (model Model) previewContentWidth() int {
+	previewWidth, _ := model.layoutMetrics()
+	return panelContentWidth(previewWidth)
+}
+
 func truncateLine(value string, width int) string {
 	if width <= 0 {
 		return ""
@@ -567,7 +554,7 @@ func formatTime(timestamp time.Time) string {
 
 func displayTitle(candidate session.Candidate) string {
 	if candidate.Title == "" {
-		return "no title"
+		return session.DefaultTitle
 	}
 	return candidate.Title
 }
@@ -577,4 +564,264 @@ func displayValue(value string) string {
 		return "-"
 	}
 	return value
+}
+
+func wrapPreviewMessage(message session.Message, query string, width int) []string {
+	label := displayRoleLabel(message.Role)
+	prefixPlain := label + " "
+	prefixRendered := roleLabelStyle(message.Role).Render(label) + " "
+	prefixWidth := runewidth.StringWidth(prefixPlain)
+	if prefixWidth >= width {
+		lines := []string{truncateLine(prefixRendered, width)}
+		lines = append(lines, wrapHighlightedPreviewText(message.Text, query, width)...)
+		return lines
+	}
+
+	wrappedText := wrapHighlightedPreviewText(message.Text, query, max(1, width-prefixWidth))
+	if len(wrappedText) == 0 {
+		return []string{prefixRendered}
+	}
+
+	lines := make([]string, 0, len(wrappedText))
+	lines = append(lines, prefixRendered+wrappedText[0])
+
+	indent := strings.Repeat(" ", prefixWidth)
+	for _, part := range wrappedText[1:] {
+		lines = append(lines, indent+part)
+	}
+
+	return lines
+}
+
+func displayRoleLabel(role string) string {
+	switch role {
+	case "assistant":
+		return "[assi]"
+	default:
+		return "[" + role + "]"
+	}
+}
+
+func (model *Model) shouldIgnoreRunesInput(value string) bool {
+	if isMouseEscapeSequence(value) {
+		return true
+	}
+	if model.mousePrefixBudget > 0 && isMouseEscapePrefixFragment(value) {
+		model.mousePrefixBudget--
+		return true
+	}
+	model.mousePrefixBudget = 0
+	return false
+}
+
+func isMouseEscapeSequence(value string) bool {
+	return mouseEscapeSequencePattern.MatchString(value)
+}
+
+func isMouseEscapePrefixFragment(value string) bool {
+	if value == "" {
+		return false
+	}
+	for _, char := range value {
+		if char != '[' {
+			return false
+		}
+	}
+	return true
+}
+
+func wrapHighlightedPreviewText(text string, query string, width int) []string {
+	if width <= 0 {
+		return nil
+	}
+	if text == "" {
+		return []string{""}
+	}
+
+	textRunes := []rune(text)
+	queryRunes := []rune(strings.TrimSpace(query))
+	matchRanges := findMatchRanges(textRunes, queryRunes)
+
+	lines := make([]string, 0, len(textRunes)/max(1, width)+1)
+	var lineBuilder strings.Builder
+	var segmentBuilder strings.Builder
+	lineWidth := 0
+	currentHighlight := false
+
+	flushSegment := func() {
+		if segmentBuilder.Len() == 0 {
+			return
+		}
+		segment := segmentBuilder.String()
+		if currentHighlight {
+			lineBuilder.WriteString(searchHitStyle.Render(segment))
+		} else {
+			lineBuilder.WriteString(segment)
+		}
+		segmentBuilder.Reset()
+	}
+
+	flushLine := func() {
+		flushSegment()
+		lines = append(lines, lineBuilder.String())
+		lineBuilder.Reset()
+		lineWidth = 0
+		currentHighlight = false
+	}
+
+	matchIndex := 0
+	for index, char := range textRunes {
+		for matchIndex < len(matchRanges) && index >= matchRanges[matchIndex].end {
+			matchIndex++
+		}
+
+		if char == '\n' {
+			flushLine()
+			continue
+		}
+
+		charWidth := runewidth.RuneWidth(char)
+		if charWidth <= 0 {
+			charWidth = 1
+		}
+		if lineWidth > 0 && lineWidth+charWidth > width {
+			flushLine()
+		}
+
+		isHighlighted := matchIndex < len(matchRanges) &&
+			index >= matchRanges[matchIndex].start &&
+			index < matchRanges[matchIndex].end
+		if segmentBuilder.Len() > 0 && isHighlighted != currentHighlight {
+			flushSegment()
+		}
+		currentHighlight = isHighlighted
+		segmentBuilder.WriteRune(char)
+		lineWidth += charWidth
+		if lineWidth >= width {
+			flushLine()
+		}
+	}
+
+	if segmentBuilder.Len() > 0 || lineBuilder.Len() > 0 || len(lines) == 0 {
+		flushLine()
+	}
+
+	return lines
+}
+
+type matchRange struct {
+	start int
+	end   int
+}
+
+func findMatchRanges(textRunes []rune, queryRunes []rune) []matchRange {
+	if len(textRunes) == 0 || len(queryRunes) == 0 || len(queryRunes) > len(textRunes) {
+		return nil
+	}
+
+	ranges := make([]matchRange, 0, 4)
+	for index := 0; index <= len(textRunes)-len(queryRunes); {
+		if equalFoldRunes(textRunes[index:index+len(queryRunes)], queryRunes) {
+			ranges = append(ranges, matchRange{start: index, end: index + len(queryRunes)})
+			index += len(queryRunes)
+			continue
+		}
+		index++
+	}
+
+	return ranges
+}
+
+func equalFoldRunes(left []rune, right []rune) bool {
+	if len(left) != len(right) {
+		return false
+	}
+
+	for index := range left {
+		if unicode.ToLower(left[index]) != unicode.ToLower(right[index]) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func wrapPrefixedPreviewText(prefix string, text string, width int) []string {
+	return wrapPrefixedStyledPreviewText(prefix, prefix, text, width)
+}
+
+func wrapPrefixedStyledPreviewText(prefixPlain string, prefixRendered string, text string, width int) []string {
+	if width <= 0 {
+		return nil
+	}
+
+	prefixWidth := runewidth.StringWidth(prefixPlain)
+	if prefixWidth >= width {
+		lines := []string{truncateLine(prefixRendered, width)}
+		lines = append(lines, wrapPreviewText(text, width)...)
+		return lines
+	}
+
+	wrappedText := wrapPreviewText(text, max(1, width-prefixWidth))
+	if len(wrappedText) == 0 {
+		return []string{prefixRendered}
+	}
+
+	lines := make([]string, 0, len(wrappedText))
+	lines = append(lines, prefixRendered+wrappedText[0])
+
+	indent := strings.Repeat(" ", prefixWidth)
+	for _, part := range wrappedText[1:] {
+		lines = append(lines, indent+part)
+	}
+
+	return lines
+}
+
+func wrapPreviewText(text string, width int) []string {
+	if width <= 0 {
+		return nil
+	}
+	if text == "" {
+		return []string{""}
+	}
+
+	runes := []rune(text)
+	lines := make([]string, 0, len(runes)/max(1, width)+1)
+	var builder strings.Builder
+	lineWidth := 0
+
+	flush := func() {
+		lines = append(lines, builder.String())
+		builder.Reset()
+		lineWidth = 0
+	}
+
+	for _, char := range runes {
+		if char == '\n' {
+			flush()
+			continue
+		}
+
+		charWidth := runewidth.RuneWidth(char)
+		if charWidth <= 0 {
+			charWidth = 1
+		}
+
+		if lineWidth > 0 && lineWidth+charWidth > width {
+			flush()
+		}
+
+		builder.WriteRune(char)
+		lineWidth += charWidth
+		if lineWidth >= width {
+			flush()
+		}
+	}
+
+	if builder.Len() > 0 || len(lines) == 0 {
+		flush()
+	}
+
+	return lines
 }

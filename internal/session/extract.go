@@ -11,13 +11,15 @@ import (
 )
 
 func ExtractCandidate(filePath string, reader io.Reader, query string) (Candidate, bool, error) {
+	trimmedQuery := strings.TrimSpace(query)
 	candidate := Candidate{
 		SessionID:      strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath)),
 		TranscriptPath: filePath,
-		Title:          "no title",
+		SearchQuery:    trimmedQuery,
+		Title:          DefaultTitle,
 	}
 
-	lowerQuery := strings.ToLower(query)
+	lowerQuery := strings.ToLower(trimmedQuery)
 	buffered := bufio.NewReader(reader)
 
 	for {
@@ -34,18 +36,24 @@ func ExtractCandidate(filePath string, reader io.Reader, query string) (Candidat
 			break
 		}
 
-		return candidate, candidate.HitCount > 0, err
+		candidate.CanResume = candidate.CWD != ""
+		return candidate, candidateMatchesQuery(candidate, trimmedQuery), err
 	}
 
 	candidate.CanResume = candidate.CWD != ""
 
-	return candidate, candidate.HitCount > 0, nil
+	return candidate, candidateMatchesQuery(candidate, trimmedQuery), nil
 }
 
-func processTranscriptLine(line []byte, lowerQuery string, candidate *Candidate) {
+type parsedMessage struct {
+	Role string
+	Text string
+}
+
+func parseTranscriptLine(line []byte, candidate *Candidate) (parsedMessage, bool) {
 	line = bytes.TrimSpace(line)
-	if len(line) == 0 || !gjson.ValidBytes(line) {
-		return
+	if len(line) == 0 {
+		return parsedMessage{}, false
 	}
 
 	results := gjson.GetManyBytes(line, "cwd", "type", "message.role", "message.content", "title")
@@ -53,7 +61,7 @@ func processTranscriptLine(line []byte, lowerQuery string, candidate *Candidate)
 	if candidate.CWD == "" {
 		candidate.CWD = strings.TrimSpace(results[0].String())
 	}
-	if candidate.Title == "no title" {
+	if candidate.Title == DefaultTitle {
 		if title := strings.TrimSpace(results[4].String()); title != "" {
 			candidate.Title = title
 		}
@@ -61,25 +69,36 @@ func processTranscriptLine(line []byte, lowerQuery string, candidate *Candidate)
 
 	messageType := results[1].String()
 	if messageType == "progress" || messageType == "file-history-snapshot" {
-		return
+		return parsedMessage{}, false
 	}
-
 	if messageType != "user" && messageType != "assistant" {
-		return
+		return parsedMessage{}, false
 	}
 
 	role := results[2].String()
 	if role != "user" && role != "assistant" {
-		return
+		return parsedMessage{}, false
 	}
 
 	text := extractNaturalLanguage(results[3])
 	if text == "" {
+		return parsedMessage{}, false
+	}
+
+	return parsedMessage{Role: role, Text: text}, true
+}
+
+func processTranscriptLine(line []byte, lowerQuery string, candidate *Candidate) {
+	msg, ok := parseTranscriptLine(line, candidate)
+	if !ok {
 		return
 	}
 
-	normalized := normalizeText(text)
-	if normalized == "" || !strings.Contains(normalized, lowerQuery) {
+	normalized := normalizeText(msg.Text)
+	if normalized == "" {
+		return
+	}
+	if lowerQuery != "" && !strings.Contains(normalized, lowerQuery) {
 		return
 	}
 
@@ -120,7 +139,7 @@ func extractNaturalLanguage(content gjson.Result) string {
 }
 
 func normalizeText(text string) string {
-	return strings.ToLower(strings.Join(strings.Fields(strings.TrimSpace(text)), " "))
+	return strings.ToLower(normalizeDisplayText(text))
 }
 
 func buildPreview(text string, lowerQuery string, maxLen int) string {
@@ -145,4 +164,12 @@ func buildPreview(text string, lowerQuery string, maxLen int) string {
 	}
 
 	return strings.TrimSpace(text[start:end])
+}
+
+func candidateMatchesQuery(candidate Candidate, query string) bool {
+	if strings.TrimSpace(query) == "" {
+		return candidate.CanResume
+	}
+
+	return candidate.HitCount > 0
 }
