@@ -28,6 +28,10 @@ type GetwdFunc func() (string, error)
 
 type IsTTYFunc func() bool
 
+type UpdateNotifier interface {
+	Notice(ctx context.Context, currentVersion string) (string, error)
+}
+
 func defaultGetwd() (string, error) {
 	return os.Getwd()
 }
@@ -36,12 +40,14 @@ func defaultIsTTY() bool {
 	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
 }
 
-func NewService() Service {
+func NewService(version string) Service {
 	return Service{
-		Searcher: search.NewScanner(runtime.NumCPU()),
-		Picker:   tui.Picker{},
-		Runner:   resume.Runner{Stdin: os.Stdin, Stdout: os.Stdout, Stderr: os.Stderr},
-		Getwd:    defaultGetwd,
-		IsTTY:    defaultIsTTY,
+		Searcher:       search.NewScanner(runtime.NumCPU()),
+		Picker:         tui.Picker{},
+		Runner:         resume.Runner{Stdin: os.Stdin, Stdout: os.Stdout, Stderr: os.Stderr},
+		Getwd:          defaultGetwd,
+		IsTTY:          defaultIsTTY,
+		UpdateNotifier: GitHubReleaseUpdateNotifier{},
+		Version:        version,
 	}
 }

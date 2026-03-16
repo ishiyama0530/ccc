@@ -10,7 +10,9 @@ import (
 )
 
 var version = "dev"
-var newService = app.NewService
+var newService = func() app.Service {
+	return app.NewService(version)
+}
 
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))

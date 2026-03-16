@@ -168,6 +168,50 @@ func TestRunFailsWhenResumeFails(t *testing.T) {
 	require.Contains(t, stderr.String(), "boom")
 }
 
+func TestRunPrintsUpdateNoticeOnStartup(t *testing.T) {
+	t.Parallel()
+
+	service := Service{
+		Searcher: &stubSearcher{results: []session.Candidate{{SessionID: "one"}}},
+		Getwd: func() (string, error) {
+			return "/cwd", nil
+		},
+		IsTTY: func() bool {
+			return false
+		},
+		UpdateNotifier: stubUpdateNotifier{message: "アップデート可能です: v0.1.0 -> v0.2.0"},
+		Version:        "v0.1.0",
+	}
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+
+	code := service.Run(context.Background(), []string{"needle"}, stdout, stderr)
+	require.Equal(t, 1, code)
+	require.Empty(t, stdout.String())
+	require.Contains(t, stderr.String(), "アップデート可能です")
+	require.Contains(t, stderr.String(), "TTY")
+}
+
+func TestRunIgnoresUpdateError(t *testing.T) {
+	t.Parallel()
+
+	service := Service{
+		Searcher: &stubSearcher{results: []session.Candidate{{SessionID: "one"}}},
+		Getwd: func() (string, error) {
+			return "/cwd", nil
+		},
+		IsTTY: func() bool {
+			return false
+		},
+		UpdateNotifier: stubUpdateNotifier{err: errors.New("network down")},
+		Version:        "v0.1.0",
+	}
+	stderr := &bytes.Buffer{}
+
+	_ = service.Run(context.Background(), []string{"needle"}, &bytes.Buffer{}, stderr)
+	require.NotContains(t, stderr.String(), "network down")
+}
+
 func TestRunReturnsZeroWhenPickerIsCanceled(t *testing.T) {
 	t.Parallel()
 
@@ -228,4 +272,13 @@ func (runner *stubRunner) Run(_ context.Context, request resume.Request) error {
 	runner.called = true
 	runner.request = request
 	return runner.err
+}
+
+type stubUpdateNotifier struct {
+	message string
+	err     error
+}
+
+func (notifier stubUpdateNotifier) Notice(_ context.Context, _ string) (string, error) {
+	return notifier.message, notifier.err
 }

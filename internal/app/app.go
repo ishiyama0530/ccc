@@ -12,11 +12,13 @@ import (
 )
 
 type Service struct {
-	Searcher Searcher
-	Picker   Picker
-	Runner   Runner
-	Getwd    GetwdFunc
-	IsTTY    IsTTYFunc
+	Searcher       Searcher
+	Picker         Picker
+	Runner         Runner
+	Getwd          GetwdFunc
+	IsTTY          IsTTYFunc
+	UpdateNotifier UpdateNotifier
+	Version        string
 }
 
 func (service Service) Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer) int {
@@ -31,6 +33,13 @@ func (service Service) Run(ctx context.Context, args []string, stdout io.Writer,
 			return 0
 		}
 		return 2
+	}
+
+	if service.UpdateNotifier != nil {
+		message, err := service.UpdateNotifier.Notice(ctx, service.Version)
+		if err == nil && strings.TrimSpace(message) != "" {
+			fmt.Fprintln(stderr, message)
+		}
 	}
 
 	query := strings.TrimSpace(strings.Join(flagSet.Args(), " "))
