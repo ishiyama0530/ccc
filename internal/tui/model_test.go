@@ -427,6 +427,64 @@ func TestModelScrollsSidePreviewWithMouseWheel(t *testing.T) {
 	require.Contains(t, stripANSI(scrolled.View()), "line 9")
 }
 
+func TestModelSelectsCandidateWithMouseClick(t *testing.T) {
+	t.Parallel()
+
+	model := NewModel([]session.Candidate{
+		{
+			SessionID: "one",
+			Title:     "no title",
+			UpdatedAt: time.Date(2026, 3, 17, 10, 0, 0, 0, time.UTC),
+		},
+		{
+			SessionID: "two",
+			Title:     "no title",
+			UpdatedAt: time.Date(2026, 3, 17, 10, 1, 0, 0, time.UTC),
+		},
+	}, stubDetailLoader{
+		details: map[string]session.Detail{
+			"one": {
+				Candidate: session.Candidate{
+					SessionID: "one",
+					Title:     "no title",
+					UpdatedAt: time.Date(2026, 3, 17, 10, 0, 0, 0, time.UTC),
+				},
+				Messages:  []session.Message{{Role: "user", Text: "first detail"}},
+			},
+			"two": {
+				Candidate: session.Candidate{
+					SessionID: "two",
+					Title:     "no title",
+					UpdatedAt: time.Date(2026, 3, 17, 10, 1, 0, 0, time.UTC),
+				},
+				Messages:  []session.Message{{Role: "user", Text: "second detail"}},
+			},
+		},
+	})
+
+	next, _ := model.Update(tea.WindowSizeMsg{Width: 100, Height: 16})
+	updated := next.(Model)
+	require.Equal(t, 0, updated.Cursor)
+	plainView := stripANSI(updated.View())
+	require.Contains(t, plainView, "session_id: one")
+
+	clickY := findLineIndexContaining(t, plainView, "2026-03-17 10:01")
+
+	next, _ = updated.Update(tea.MouseMsg{
+		X:      5,
+		Y:      clickY,
+		Button: tea.MouseButtonLeft,
+		Action: tea.MouseActionPress,
+	})
+	clicked := next.(Model)
+
+	require.Equal(t, 1, clicked.Cursor)
+	plainView = stripANSI(clicked.View())
+	require.Contains(t, plainView, "session_id: two")
+	require.Contains(t, plainView, "second detail")
+	require.NotContains(t, plainView, "first detail")
+}
+
 func TestModelScrollsWrappedPreviewContent(t *testing.T) {
 	t.Parallel()
 
@@ -568,6 +626,20 @@ func countLines(value string) int {
 	}
 
 	return strings.Count(value, "\n") + 1
+}
+
+func findLineIndexContaining(t *testing.T, view string, needle string) int {
+	t.Helper()
+
+	lines := strings.Split(view, "\n")
+	for index, line := range lines {
+		if strings.Contains(line, needle) {
+			return index
+		}
+	}
+
+	t.Fatalf("line containing %q not found in view", needle)
+	return -1
 }
 
 type stubDetailLoader struct {

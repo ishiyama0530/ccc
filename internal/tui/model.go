@@ -18,6 +18,7 @@ const mouseScrollStep = 3
 const topMarginLines = 1
 const commandPanelHeight = 1
 const panelBorderLines = 2
+const listPanelLeadingLines = 3
 
 var (
 	panelBorderColor             = lipgloss.Color("#4B5563")
@@ -171,6 +172,10 @@ func (model Model) renderSplitView() string {
 }
 
 func (model *Model) handleMouse(msg tea.MouseMsg) {
+	if model.handleListClick(msg) {
+		return
+	}
+
 	if model.isPreviewMouse(msg) {
 		model.mousePrefixBudget = 1
 		switch msg.Button {
@@ -182,9 +187,27 @@ func (model *Model) handleMouse(msg tea.MouseMsg) {
 	}
 }
 
+func isLeftClickMsg(msg tea.MouseMsg) bool {
+	return msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonLeft
+}
+
 func isWheelScrollMsg(msg tea.MouseMsg) bool {
 	return msg.Action == tea.MouseActionPress &&
 		(msg.Button == tea.MouseButtonWheelUp || msg.Button == tea.MouseButtonWheelDown)
+}
+
+func (model *Model) handleListClick(msg tea.MouseMsg) bool {
+	if !isLeftClickMsg(msg) {
+		return false
+	}
+
+	index, ok := model.listIndexAt(msg.X, msg.Y)
+	if !ok {
+		return false
+	}
+
+	model.selectCandidate(index)
+	return true
 }
 
 func (model Model) isPreviewMouse(msg tea.MouseMsg) bool {
@@ -210,6 +233,34 @@ func (model Model) layoutMetrics() (previewWidth int, previewX int) {
 	}
 
 	return rightWidth, leftWidth
+}
+
+func (model Model) listIndexAt(x int, y int) (int, bool) {
+	if len(model.Candidates) == 0 {
+		return 0, false
+	}
+
+	_, leftWidth := model.layoutMetrics()
+	if x < 0 || x >= leftWidth {
+		return 0, false
+	}
+
+	row := y - model.listContentStartY()
+	if row < 0 || row >= model.listPageSize() {
+		return 0, false
+	}
+
+	index := model.ListOffset + row
+	if index < 0 || index >= len(model.Candidates) {
+		return 0, false
+	}
+
+	return index, true
+}
+
+func (model Model) listContentStartY() int {
+	style := panelStyle(0, 0)
+	return topMarginLines + style.GetBorderTopSize() + style.GetPaddingTop() + listPanelLeadingLines
 }
 
 func (model Model) panelHeight() int {
@@ -274,20 +325,25 @@ func panelStyle(width int, height int) lipgloss.Style {
 
 func (model *Model) moveUp() {
 	if model.Cursor > 0 {
-		model.Cursor--
-		model.PreviewOffset = 0
-		model.loadCurrentDetail()
-		model.ensureCursorVisible()
+		model.selectCandidate(model.Cursor - 1)
 	}
 }
 
 func (model *Model) moveDown() {
 	if model.Cursor < len(model.Candidates)-1 {
-		model.Cursor++
-		model.PreviewOffset = 0
-		model.loadCurrentDetail()
-		model.ensureCursorVisible()
+		model.selectCandidate(model.Cursor + 1)
 	}
+}
+
+func (model *Model) selectCandidate(index int) {
+	if index < 0 || index >= len(model.Candidates) {
+		return
+	}
+
+	model.Cursor = index
+	model.PreviewOffset = 0
+	model.loadCurrentDetail()
+	model.ensureCursorVisible()
 }
 
 func (model *Model) appendArgs(value string) {
