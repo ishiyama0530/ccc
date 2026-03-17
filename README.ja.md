@@ -35,14 +35,17 @@ curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | 
 ```bash
 ccc
 ccc -d <dir>
+ccc -n <count>
 ccc <query>
 ccc -d <dir> <query>
+ccc -n <count> <query>
 ccc --dir <dir> <query>
 ```
 
 - デフォルトでは、現在の作業ディレクトリに対応する Claude 履歴を検索します。
 - `-d` / `--dir` で検索対象の作業ディレクトリを切り替えます。
-- クエリを省略すると、対象ディレクトリの全セッション履歴を一覧表示します。
+- `-n` / `--limit` で表示する履歴件数の上限を指定できます。デフォルトは `100` 件です。
+- クエリを省略すると、対象ディレクトリのセッション履歴をデフォルトで最大 `100` 件まで一覧表示します。
 - 検索は大文字小文字を区別しません。
 - 一致が見つかると TUI を開きます。
 - 追加引数は下部のコマンドバーに入力します。`claude --resume <session_id>` は固定で、その後ろに引数を追加します。
@@ -53,8 +56,10 @@ ccc --dir <dir> <query>
 
 ```bash
 ccc
+ccc -n 200
 ccc bug
 ccc -d ~/src/app
+ccc -d ~/src/app -n 50 timeout
 ccc -d ~/src/app timeout
 ```
 

@@ -35,14 +35,17 @@ curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | 
 ```bash
 ccc
 ccc -d <dir>
+ccc -n <count>
 ccc <query>
 ccc -d <dir> <query>
+ccc -n <count> <query>
 ccc --dir <dir> <query>
 ```
 
 - By default, `ccc` searches the Claude history for the current working directory.
 - `-d` / `--dir` switches the target working directory.
-- With no query, `ccc` lists all session history for the target directory.
+- `-n` / `--limit` sets the maximum number of history entries to display. The default is `100`.
+- With no query, `ccc` lists up to `100` session history entries for the target directory by default.
 - Search is case-insensitive.
 - If matches are found, `ccc` opens the TUI.
 - Extra Claude args are typed into the bottom command bar. `ccc` always keeps `claude --resume <session_id>` fixed and appends your args after it.
@@ -53,8 +56,10 @@ Examples:
 
 ```bash
 ccc
+ccc -n 200
 ccc bug
 ccc -d ~/src/app
+ccc -d ~/src/app -n 50 timeout
 ccc -d ~/src/app timeout
 ```
 

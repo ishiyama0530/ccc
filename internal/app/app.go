@@ -8,6 +8,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/ishiyama0530/ccc/internal/session"
 	"github.com/ishiyama0530/ccc/internal/tui"
 )
 
@@ -19,17 +20,25 @@ type Service struct {
 	IsTTY    IsTTYFunc
 }
 
+const defaultCandidateLimit = 100
+
 func (service Service) Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer) int {
 	flagSet := flag.NewFlagSet("ccc", flag.ContinueOnError)
 	flagSet.SetOutput(stderr)
 
 	searchDir := flagSet.String("d", "", "project directory")
 	flagSet.StringVar(searchDir, "dir", "", "project directory")
+	limit := flagSet.Int("n", defaultCandidateLimit, "max number of history entries to display")
+	flagSet.IntVar(limit, "limit", defaultCandidateLimit, "max number of history entries to display")
 
 	if err := flagSet.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return 0
 		}
+		return 2
+	}
+	if *limit < 1 {
+		fmt.Fprintln(stderr, "limit must be at least 1")
 		return 2
 	}
 
@@ -67,6 +76,8 @@ func (service Service) Run(ctx context.Context, args []string, stdout io.Writer,
 		return 1
 	}
 
+	candidates = limitCandidates(candidates, *limit)
+
 	isTTY := service.IsTTY
 	if isTTY == nil {
 		isTTY = func() bool { return false }
@@ -96,4 +107,12 @@ func (service Service) Run(ctx context.Context, args []string, stdout io.Writer,
 	}
 
 	return 0
+}
+
+func limitCandidates(candidates []session.Candidate, limit int) []session.Candidate {
+	if len(candidates) <= limit {
+		return candidates
+	}
+
+	return candidates[:limit]
 }
