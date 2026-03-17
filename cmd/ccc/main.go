@@ -18,7 +18,7 @@ func main() {
 
 func run(args []string, stdout io.Writer, stderr io.Writer) int {
 	if len(args) == 1 && (args[0] == "--version" || args[0] == "-version") {
-		_, _ = fmt.Fprintln(stdout, currentVersion())
+		_, _ = fmt.Fprintln(stdout, version)
 		return 0
 	}
 

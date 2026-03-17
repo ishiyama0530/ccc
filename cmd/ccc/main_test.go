@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"runtime/debug"
 	"testing"
 
 	"github.com/ishiyama0530/ccc/internal/app"
@@ -38,63 +37,13 @@ func TestRunDelegatesToService(t *testing.T) {
 }
 
 func TestRunPrintsVersion(t *testing.T) {
-	originalVersion := version
-	originalReadBuildInfo := readBuildInfo
-	t.Cleanup(func() {
-		version = originalVersion
-		readBuildInfo = originalReadBuildInfo
-	})
-
-	version = "v1.2.3"
-	readBuildInfo = nil
-
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 
 	code := run([]string{"--version"}, stdout, stderr)
 	require.Equal(t, 0, code)
-	require.Equal(t, "v1.2.3\n", stdout.String())
+	require.Equal(t, version+"\n", stdout.String())
 	require.Empty(t, stderr.String())
-}
-
-func TestCurrentVersionUsesBuildInfoVersionWhenEmbeddedVersionIsDev(t *testing.T) {
-	originalVersion := version
-	originalReadBuildInfo := readBuildInfo
-	t.Cleanup(func() {
-		version = originalVersion
-		readBuildInfo = originalReadBuildInfo
-	})
-
-	version = "dev"
-	readBuildInfo = func() (*debug.BuildInfo, bool) {
-		return &debug.BuildInfo{
-			Main: debug.Module{Version: "v2.0.1"},
-		}, true
-	}
-
-	require.Equal(t, "v2.0.1", currentVersion())
-}
-
-func TestCurrentVersionFallsBackToVCSRevision(t *testing.T) {
-	originalVersion := version
-	originalReadBuildInfo := readBuildInfo
-	t.Cleanup(func() {
-		version = originalVersion
-		readBuildInfo = originalReadBuildInfo
-	})
-
-	version = "dev"
-	readBuildInfo = func() (*debug.BuildInfo, bool) {
-		return &debug.BuildInfo{
-			Main: debug.Module{Version: "(devel)"},
-			Settings: []debug.BuildSetting{
-				{Key: "vcs.revision", Value: "abcdef1234567890"},
-				{Key: "vcs.modified", Value: "true"},
-			},
-		}, true
-	}
-
-	require.Equal(t, "abcdef123456-dirty", currentVersion())
 }
 
 type stubMainSearcher struct {

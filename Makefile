@@ -1,7 +1,7 @@
 APP := ccc
 DOCKER_COMPOSE := docker compose run --build --rm dev
 QUERY ?=
-VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+VERSION ?=
 DIR ?=
 HOST_GOOS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 HOST_GOARCH := $(shell uname -m | sed 's/x86_64/amd64/;s/arm64/arm64/')
@@ -18,7 +18,7 @@ run: build
 
 build:
 	@mkdir -p bin
-	@$(DOCKER_COMPOSE) bash -c 'GOOS=$(HOST_GOOS) GOARCH=$(HOST_GOARCH) CGO_ENABLED=0 go build -ldflags "-X main.version=$(VERSION)" -o bin/$(APP) ./cmd/ccc'
+	@$(DOCKER_COMPOSE) bash -c 'GOOS=$(HOST_GOOS) GOARCH=$(HOST_GOARCH) CGO_ENABLED=0 go build -o bin/$(APP) ./cmd/ccc'
 
 test:
 	@$(DOCKER_COMPOSE) bash -c 'go test ./... && go test -race ./...'
