@@ -20,6 +20,7 @@ concurrency:
 
 jobs:
   release:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -41,7 +42,7 @@ jobs:
               exit 1
             fi
           else
-            latest_tag="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | head -n 1)"
+            latest_tag="$(git tag --list --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)"
 
             if [[ -z "${latest_tag}" ]]; then
               version="v0.0.1"
@@ -68,13 +69,22 @@ jobs:
           cache: true
 
       - name: Build
-        run: make build
+        run: go build ./cmd/ccc
 
       - name: Test
-        run: make test
+        run: go test ./...
+
+      - name: Race Test
+        run: go test -race ./...
+
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
 
       - name: Lint
-        run: make lint
+        run: golangci-lint run ./...
+
+      - name: Vet
+        run: go vet ./...
 
       - name: Release
         env:
