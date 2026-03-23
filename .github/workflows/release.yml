@@ -1,0 +1,82 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to publish (example: v1.2.3). Leave blank to auto-increment the latest patch version.'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release version
+        id: version
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          set -euo pipefail
+
+          if [[ -n "${INPUT_VERSION:-}" ]]; then
+            version="${INPUT_VERSION}"
+            if [[ ! "${version}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Manual version must match vMAJOR.MINOR.PATCH" >&2
+              exit 1
+            fi
+          else
+            latest_tag="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | head -n 1)"
+
+            if [[ -z "${latest_tag}" ]]; then
+              version="v0.0.1"
+            else
+              version="${latest_tag}"
+              version="${version#v}"
+              IFS='.' read -r major minor patch <<< "${version}"
+              version="v${major}.${minor}.$((patch + 1))"
+            fi
+          fi
+
+          if git rev-parse -q --verify "refs/tags/${version}" >/dev/null; then
+            echo "Tag ${version} already exists" >&2
+            exit 1
+          fi
+
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "Releasing ${version}"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build
+        run: make build
+
+      - name: Test
+        run: make test
+
+      - name: Lint
+        run: make lint
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: make release VERSION=${{ steps.version.outputs.version }}

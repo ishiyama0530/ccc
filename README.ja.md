@@ -87,6 +87,12 @@ PATH="$PWD/bin:$PATH" ccc bug
 
 ## リリース
 
+`main` に push またはマージされると、GitHub Actions が最新の `vMAJOR.MINOR.PATCH` タグを見つけてパッチバージョンを 1 つ進め、自動でリリースを公開するようになりました。
+
+GitHub Actions の `Release` ワークフローは手動実行もでき、`version` 入力に `v1.2.3` のような値を指定できます。入力を空にすると、最新タグから次のパッチバージョンを自動採番します。
+
+ローカルでリリースする場合:
+
 ```bash
 export GITHUB_TOKEN=...
 make release VERSION=vX.Y.Z

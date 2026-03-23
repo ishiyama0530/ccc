@@ -87,6 +87,12 @@ PATH="$PWD/bin:$PATH" ccc bug
 
 ## Release
 
+GitHub Actions now publishes releases automatically when commits are pushed or merged into `main`. The workflow finds the latest `vMAJOR.MINOR.PATCH` tag and publishes the next patch version.
+
+You can also run the `Release` workflow manually from GitHub Actions and optionally pass a `version` input such as `v1.2.3`. If you leave the input blank, it will auto-increment the latest patch version.
+
+For local releases:
+
 ```bash
 export GITHUB_TOKEN=...
 make release VERSION=vX.Y.Z
