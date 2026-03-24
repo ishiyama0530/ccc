@@ -38,3 +38,8 @@ settings.local.json
 
 # OS files
 .DS_Store
+
+# Agent
+.agents
+.claude
+skills-lock.json

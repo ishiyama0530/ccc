@@ -16,6 +16,17 @@ curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | 
 - Supports macOS / Linux on `amd64` / `arm64`
 - Installs `ccc` into `~/.local/bin` by default
 
+Install with npm instead:
+
+```bash
+npm install -g @ishiyama0530/ccc
+# or
+npx @ishiyama0530/ccc
+```
+
+- Downloads the matching GitHub Release asset during `npm install`
+- Supports macOS / Linux / Windows on `amd64` / `arm64`
+
 If `~/.local/bin` is not on your PATH, add it in your shell config.
 
 To change the install location:
@@ -89,7 +100,8 @@ PATH="$PWD/bin:$PATH" ccc bug
 
 ```bash
 export GITHUB_TOKEN=...
+export NPM_TOKEN=...
 make release VERSION=vX.Y.Z
 ```
 
-`make release` publishes the GitHub Release assets used by `install.sh`.
+`make release` publishes the GitHub Release assets used by `install.sh`, then publishes `@ishiyama0530/ccc` to npm.

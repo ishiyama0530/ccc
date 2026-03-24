@@ -69,3 +69,23 @@ jobs:
 
       - name: Vet
         run: go vet ./...
+
+  npm-packaging:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Node Tests
+        run: node --test packaging/npm/test/*.test.js
+
+      - name: Prepare npm Package
+        run: node packaging/npm/prepare-package.js --tag v0.0.0 --out-dir dist/npm-package
+
+      - name: Smoke Pack npm Package
+        run: npm pack ./dist/npm-package

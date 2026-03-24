@@ -1,0 +1,39 @@
+{
+  "name": "@ishiyama0530/ccc",
+  "version": "__VERSION__",
+  "description": "Find and resume Claude Code sessions quickly",
+  "license": "MIT",
+  "homepage": "https://github.com/ishiyama0530/ccc",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ishiyama0530/ccc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ishiyama0530/ccc/issues"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "cli",
+    "go"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "ccc": "bin/ccc.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "scripts/",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/postinstall.js"
+  }
+}

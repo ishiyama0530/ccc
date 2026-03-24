@@ -16,6 +16,17 @@ curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | 
 - 対応環境は macOS / Linux、`amd64` / `arm64` です。
 - `ccc` はデフォルトで `~/.local/bin` に入ります。
 
+npm でインストールする場合:
+
+```bash
+npm install -g @ishiyama0530/ccc
+# または
+npx @ishiyama0530/ccc
+```
+
+- `npm install` 時に環境に合う GitHub Release アセットをダウンロードします。
+- 対応環境は macOS / Linux / Windows、`amd64` / `arm64` です。
+
 `~/.local/bin` が PATH に入っていない場合は、シェル設定に追加してください。
 
 インストール先を変える場合:
@@ -89,7 +100,8 @@ PATH="$PWD/bin:$PATH" ccc bug
 
 ```bash
 export GITHUB_TOKEN=...
+export NPM_TOKEN=...
 make release VERSION=vX.Y.Z
 ```
 
-`make release` は、`install.sh` が使う GitHub Release を公開します。
+`make release` は、`install.sh` が使う GitHub Release を公開し、そのあと `@ishiyama0530/ccc` を npm に公開します。

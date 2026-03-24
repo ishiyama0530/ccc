@@ -48,8 +48,8 @@
 
 ## Release Workflow
 - Use `make release VERSION=vX.Y.Z`.
-- The command tags and pushes the release tag, then runs GoReleaser to publish the GitHub release assets used by `install.sh`.
-- `GITHUB_TOKEN` must be set before running the release target.
+- The command validates release preflight, tags and pushes the release tag, runs GoReleaser for the GitHub release assets used by `install.sh`, then publishes `@ishiyama0530/ccc` to npm.
+- `GITHUB_TOKEN` and `NPM_TOKEN` must be set before running the release target.
 
 ## Acceptance Checklist
 - Single result prints a clean resume command and nothing else to stdout.

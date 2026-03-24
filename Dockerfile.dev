@@ -2,6 +2,10 @@ FROM golang:1.26.1-bookworm
 
 WORKDIR /workspace
 
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends nodejs npm \
+  && rm -rf /var/lib/apt/lists/*
+
 RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
 
 CMD ["bash"]
