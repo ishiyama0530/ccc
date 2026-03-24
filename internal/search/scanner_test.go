@@ -293,6 +293,31 @@ func TestScannerMatchesRealPathHistoryWhenProjectDirIsSymlink(t *testing.T) {
 	require.Equal(t, symlinkDir, candidates[0].ProjectPath)
 }
 
+func TestScannerMatchesHistoryWhenProjectDirDiffersOnlyByCase(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	workspaceDir := filepath.Join(root, "workspace")
+	actualProjectDir := filepath.Join(workspaceDir, "Dev", "test")
+	requestedProjectDir := filepath.Join(workspaceDir, "dev", "test")
+	require.NoError(t, os.MkdirAll(actualProjectDir, 0o755))
+
+	claudeRoot := filepath.Join(root, ".claude", "projects")
+	writeTranscript(t, filepath.Join(claudeRoot, encodeProjectPath(actualProjectDir), "match.jsonl"), []string{
+		`{"type":"user","cwd":"` + actualProjectDir + `","message":{"role":"user","content":"needle with actual case"}}`,
+	})
+
+	scanner := NewScanner(2)
+	scanner.projectsRoot = claudeRoot
+
+	candidates, err := scanner.Scan(context.Background(), requestedProjectDir, "needle")
+	require.NoError(t, err)
+	require.Len(t, candidates, 1)
+	require.Equal(t, "match", candidates[0].SessionID)
+	require.Equal(t, actualProjectDir, candidates[0].CWD)
+	require.Equal(t, requestedProjectDir, candidates[0].ProjectPath)
+}
+
 func TestEncodeProjectPathNormalizesDotsAndSeparators(t *testing.T) {
 	t.Parallel()
 

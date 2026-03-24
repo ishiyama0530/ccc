@@ -14,12 +14,8 @@ func (scanner Scanner) resolveHistoryRoots(projectDir string) (historyRoots []st
 		return nil, "", nil, false, err
 	}
 
-	info, err := os.Stat(normalizedProjectDir)
-	if err != nil {
+	if _, err := firstExistingProjectDir(projectDirVariants); err != nil {
 		return nil, "", nil, false, err
-	}
-	if !info.IsDir() {
-		return nil, "", nil, false, fmt.Errorf("%s is not a directory", normalizedProjectDir)
 	}
 
 	projectsRoot, err := scanner.claudeProjectsRoot()
@@ -93,9 +89,14 @@ func normalizedProjectDirVariants(projectDir string) (normalizedProjectDir strin
 	}
 
 	variants = append(variants, normalizedProjectDir)
+	variants = appendUniqueString(variants, resolvePathCase(normalizedProjectDir))
 
-	resolvedProjectDir, err := filepath.EvalSymlinks(normalizedProjectDir)
-	if err == nil {
+	for _, variant := range append([]string(nil), variants...) {
+		resolvedProjectDir, err := filepath.EvalSymlinks(variant)
+		if err != nil {
+			continue
+		}
+
 		normalizedResolvedProjectDir, normalizeErr := normalizeProjectDir(resolvedProjectDir)
 		if normalizeErr != nil {
 			return "", nil, normalizeErr
@@ -104,6 +105,70 @@ func normalizedProjectDirVariants(projectDir string) (normalizedProjectDir strin
 	}
 
 	return normalizedProjectDir, variants, nil
+}
+
+func firstExistingProjectDir(variants []string) (string, error) {
+	var notExistErr error
+
+	for _, variant := range variants {
+		info, err := os.Stat(variant)
+		if err != nil {
+			if os.IsNotExist(err) {
+				if notExistErr == nil {
+					notExistErr = err
+				}
+				continue
+			}
+			return "", err
+		}
+
+		if !info.IsDir() {
+			return "", fmt.Errorf("%s is not a directory", variant)
+		}
+
+		return variant, nil
+	}
+
+	if notExistErr != nil {
+		return "", notExistErr
+	}
+
+	return "", fmt.Errorf("project directory is required")
+}
+
+func resolvePathCase(path string) string {
+	parent := filepath.Dir(path)
+	if parent == path {
+		return path
+	}
+
+	resolvedParent := resolvePathCase(parent)
+	base := filepath.Base(path)
+
+	entries, err := os.ReadDir(resolvedParent)
+	if err != nil {
+		return filepath.Join(resolvedParent, base)
+	}
+
+	caseFoldMatch := ""
+	caseFoldMatches := 0
+
+	for _, entry := range entries {
+		name := entry.Name()
+		if name == base {
+			return filepath.Join(resolvedParent, name)
+		}
+		if strings.EqualFold(name, base) {
+			caseFoldMatch = name
+			caseFoldMatches++
+		}
+	}
+
+	if caseFoldMatches == 1 {
+		return filepath.Join(resolvedParent, caseFoldMatch)
+	}
+
+	return filepath.Join(resolvedParent, base)
 }
 
 func encodedProjectPaths(projectDir string) []string {
