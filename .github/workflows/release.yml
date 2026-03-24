@@ -62,29 +62,14 @@ jobs:
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
           echo "Releasing ${version}"
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
       - name: Build
-        run: go build ./cmd/ccc
+        run: make build
 
       - name: Test
-        run: go test ./...
-
-      - name: Race Test
-        run: go test -race ./...
-
-      - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
+        run: make test
 
       - name: Lint
-        run: golangci-lint run ./...
-
-      - name: Vet
-        run: go vet ./...
+        run: make lint
 
       - name: Release
         env:
