@@ -12,15 +12,36 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
+  checks:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Build
+        run: make build
+
+      - name: Test
+        run: make test
+
+      - name: Lint
+        run: make lint
+
   release:
     if: github.ref == 'refs/heads/main'
+    needs: checks
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -35,6 +56,8 @@ jobs:
         run: |
           set -euo pipefail
 
+          head_commit="$(git rev-parse HEAD)"
+
           if [[ -n "${INPUT_VERSION:-}" ]]; then
             version="${INPUT_VERSION}"
             if [[ ! "${version}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -42,34 +65,32 @@ jobs:
               exit 1
             fi
           else
-            latest_tag="$(git tag --list --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)"
+            head_tag="$(git tag --points-at HEAD --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | head -n 1 || true)"
 
-            if [[ -z "${latest_tag}" ]]; then
-              version="v0.0.1"
+            if [[ -n "${head_tag}" ]]; then
+              version="${head_tag}"
             else
-              version="${latest_tag}"
-              version="${version#v}"
-              IFS='.' read -r major minor patch <<< "${version}"
-              version="v${major}.${minor}.$((patch + 1))"
+              latest_tag="$(git tag --list --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)"
+
+              if [[ -z "${latest_tag}" ]]; then
+                version="v0.0.1"
+              else
+                version="${latest_tag}"
+                version="${version#v}"
+                IFS='.' read -r major minor patch <<< "${version}"
+                version="v${major}.${minor}.$((patch + 1))"
+              fi
             fi
           fi
 
-          if git rev-parse -q --verify "refs/tags/${version}" >/dev/null; then
-            echo "Tag ${version} already exists" >&2
+          existing_commit="$(git rev-list -n 1 "refs/tags/${version}" 2>/dev/null || true)"
+          if [[ -n "${existing_commit}" && "${existing_commit}" != "${head_commit}" ]]; then
+            echo "Tag ${version} already exists on a different commit" >&2
             exit 1
           fi
 
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
           echo "Releasing ${version}"
-
-      - name: Build
-        run: make build
-
-      - name: Test
-        run: make test
-
-      - name: Lint
-        run: make lint
 
       - name: Release
         env:

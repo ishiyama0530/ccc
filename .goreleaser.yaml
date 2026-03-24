@@ -2,10 +2,6 @@ version: 2
 
 project_name: ccc
 
-before:
-  hooks:
-    - go mod tidy
-
 builds:
   - id: ccc
     main: ./cmd/ccc
@@ -36,6 +32,8 @@ release:
   github:
     owner: ishiyama0530
     name: ccc
+  replace_existing_artifacts: true
+  target_commitish: "{{ .Commit }}"
 
 changelog:
   disable: true

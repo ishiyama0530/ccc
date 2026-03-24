@@ -29,7 +29,6 @@ lint:
 release:
 	@if [ -z "$(VERSION)" ]; then echo "VERSION is required" >&2; exit 1; fi
 	@if ! git rev-parse -q --verify "refs/tags/$(VERSION)" >/dev/null; then git tag "$(VERSION)"; fi
-	@git push origin "$(VERSION)"
 	@docker run --rm \
 		-e GITHUB_TOKEN \
 		-v $(PWD):/workspace \
