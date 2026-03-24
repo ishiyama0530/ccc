@@ -14,7 +14,7 @@ async function main() {
 
 if (require.main === module) {
   main().catch((error) => {
-    console.error(`failed to install ccc: ${error.message}`);
+    console.error(`failed to install claudecc: ${error.message}`);
     process.exit(1);
   });
 }

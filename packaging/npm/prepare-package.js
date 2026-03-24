@@ -64,7 +64,7 @@ function preparePackage({ outDir, tag }) {
   fs.writeFileSync(path.join(resolvedOutDir, "package.json"), packageJSON);
   fs.copyFileSync(path.join(root, "README.md"), path.join(resolvedOutDir, "README.md"));
   fs.copyFileSync(path.join(root, "LICENSE"), path.join(resolvedOutDir, "LICENSE"));
-  fs.chmodSync(path.join(resolvedOutDir, "bin", "ccc.js"), 0o755);
+  fs.chmodSync(path.join(resolvedOutDir, "bin", "claudecc.js"), 0o755);
   fs.chmodSync(path.join(resolvedOutDir, "scripts", "postinstall.js"), 0o755);
 
   return {

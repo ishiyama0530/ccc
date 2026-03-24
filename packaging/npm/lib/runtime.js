@@ -56,8 +56,8 @@ function resolveReleaseTarget(platform = process.platform, arch = process.arch) 
   const osName = normalizePlatform(platform);
   const archName = normalizeArch(arch);
   const archiveFormat = osName === "windows" ? "zip" : "tar.gz";
-  const archiveName = `ccc_${osName}_${archName}.${archiveFormat}`;
-  const binaryName = osName === "windows" ? "ccc.exe" : "ccc";
+  const archiveName = `claudecc_${osName}_${archName}.${archiveFormat}`;
+  const binaryName = osName === "windows" ? "claudecc.exe" : "claudecc";
 
   return {
     archiveFormat,
@@ -79,11 +79,16 @@ function resolveInstalledBinaryPath({
 }
 
 function resolveDownloadBase(env = process.env) {
+  if (env.CLAUDECC_NPM_GITHUB_DOWNLOAD_BASE) {
+    return env.CLAUDECC_NPM_GITHUB_DOWNLOAD_BASE.replace(/\/+$/, "");
+  }
+
   if (env.CCC_NPM_GITHUB_DOWNLOAD_BASE) {
     return env.CCC_NPM_GITHUB_DOWNLOAD_BASE.replace(/\/+$/, "");
   }
 
-  const repo = env.CCC_NPM_GITHUB_REPO || DEFAULT_REPO;
+  const repo =
+    env.CLAUDECC_NPM_GITHUB_REPO || env.CCC_NPM_GITHUB_REPO || DEFAULT_REPO;
   return `https://github.com/${repo}/releases/download`;
 }
 
@@ -201,12 +206,17 @@ async function installPackageBinary({
 }) {
   const resolvedPackageRoot = packageRoot || path.resolve(__dirname, "..");
   const target = resolveReleaseTarget(platform, arch);
-  const checksumsName = env.CCC_NPM_CHECKSUMS_NAME || DEFAULT_CHECKSUMS_NAME;
+  const checksumsName =
+    env.CLAUDECC_NPM_CHECKSUMS_NAME ||
+    env.CCC_NPM_CHECKSUMS_NAME ||
+    DEFAULT_CHECKSUMS_NAME;
   const downloadBase = resolveDownloadBase(env);
   const releaseTag =
-    env.CCC_NPM_RELEASE_TAG || releaseTagFromPackageVersion(packageVersion);
+    env.CLAUDECC_NPM_RELEASE_TAG ||
+    env.CCC_NPM_RELEASE_TAG ||
+    releaseTagFromPackageVersion(packageVersion);
   const runtimeDir = path.join(resolvedPackageRoot, "runtime");
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ccc-npm-"));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "claudecc-npm-"));
   const archivePath = path.join(tempDir, target.archiveName);
 
   try {
@@ -249,7 +259,7 @@ function spawnInstalledBinary({
   const binaryPath = resolveInstalledBinaryPath({ packageRoot, platform, arch });
   if (!fs.existsSync(binaryPath)) {
     throw new Error(
-      "ccc binary is not installed. Reinstall the package to download the matching release asset.",
+      "claudecc binary is not installed. Reinstall the package to download the matching release asset.",
     );
   }
 

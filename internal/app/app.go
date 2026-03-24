@@ -23,7 +23,7 @@ type Service struct {
 const defaultCandidateLimit = 100
 
 func (service Service) Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer) int {
-	flagSet := flag.NewFlagSet("ccc", flag.ContinueOnError)
+	flagSet := flag.NewFlagSet("claudecc", flag.ContinueOnError)
 	flagSet.SetOutput(stderr)
 
 	searchDir := flagSet.String("d", "", "project directory")

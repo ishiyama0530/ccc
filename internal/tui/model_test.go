@@ -51,7 +51,7 @@ func TestModelRendersListWithSidePreviewByDefault(t *testing.T) {
 	plainView := stripANSI(view)
 
 	require.True(t, strings.HasPrefix(plainView, "\n"))
-	require.Contains(t, plainView, "ccc candidates")
+	require.Contains(t, plainView, "claudecc candidates")
 	require.Contains(t, plainView, "1 session")
 	require.Contains(t, plainView, "preview")
 	require.Contains(t, plainView, "session_id: session-123")
