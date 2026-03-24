@@ -24,6 +24,7 @@ npm install -g @ishiyama0530/ccc
 npx @ishiyama0530/ccc
 ```
 
+- `npm install -g @ishiyama0530/ccc` is recommended because you can launch it directly with `ccc`
 - Downloads the matching GitHub Release asset during `npm install`
 - Supports macOS / Linux / Windows on `amd64` / `arm64`
 

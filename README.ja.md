@@ -24,6 +24,7 @@ npm install -g @ishiyama0530/ccc
 npx @ishiyama0530/ccc
 ```
 
+- 普段使いなら `npm install -g @ishiyama0530/ccc` で入れて、`ccc` だけで起動するのがおすすめ。
 - `npm install` 時に環境に合う GitHub Release アセットをダウンロードします。
 - 対応環境は macOS / Linux / Windows、`amd64` / `arm64` です。
 
