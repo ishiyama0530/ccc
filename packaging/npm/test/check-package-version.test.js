@@ -37,12 +37,14 @@ function installHTTPMock(routes) {
 test("ensurePackageVersionMissing allows unpublished packages", async (t) => {
   const registry = "http://registry.test";
   const restoreHTTP = installHTTPMock(
-    new Map([[`${registry}/claudecc`, { body: Buffer.alloc(0), statusCode: 404 }]]),
+    new Map([
+      [`${registry}/%40ishiyama0530%2Fccc`, { body: Buffer.alloc(0), statusCode: 404 }],
+    ]),
   );
   t.after(restoreHTTP);
 
   const version = await ensurePackageVersionMissing({
-    packageName: "claudecc",
+    packageName: "@ishiyama0530/ccc",
     registry,
     tag: "v1.2.3",
   });
@@ -55,9 +57,9 @@ test("ensurePackageVersionMissing rejects already published versions", async (t)
   const restoreHTTP = installHTTPMock(
     new Map([
       [
-        `${registry}/claudecc`,
+        `${registry}/%40ishiyama0530%2Fccc`,
         {
-          body: Buffer.from(JSON.stringify({ versions: { "1.2.3": { name: "claudecc" } } })),
+          body: Buffer.from(JSON.stringify({ versions: { "1.2.3": { name: "ccc" } } })),
           statusCode: 200,
         },
       ],
@@ -67,7 +69,7 @@ test("ensurePackageVersionMissing rejects already published versions", async (t)
 
   await assert.rejects(
     ensurePackageVersionMissing({
-      packageName: "claudecc",
+      packageName: "@ishiyama0530/ccc",
       registry,
       tag: "v1.2.3",
     }),

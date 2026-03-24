@@ -1,9 +1,9 @@
-APP := claudecc
+APP := ccc
 DOCKER_COMPOSE := docker compose run --build --rm dev
 DOCKER_WORKDIR := /workspace
 DOCKER_WORKSPACE_MOUNT := $(PWD):$(DOCKER_WORKDIR)
 NPM_DOCKER_IMAGE := node:22-bookworm-slim
-NPM_PACKAGE_NAME := claudecc
+NPM_PACKAGE_NAME := @ishiyama0530/ccc
 NPM_PACKAGE_DIR := dist/npm-package
 NPM_REGISTRY := https://registry.npmjs.org
 QUERY ?=

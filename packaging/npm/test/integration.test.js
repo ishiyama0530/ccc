@@ -62,9 +62,7 @@ test("postinstall downloads the matching release asset and the shim runs it", as
     return;
   }
 
-  const tempDir = fs.mkdtempSync(
-    path.join(os.tmpdir(), "claudecc-npm-integration-"),
-  );
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ccc-npm-integration-"));
   const packageDir = path.join(tempDir, "package");
   const releaseDir = path.join(tempDir, "release");
   const version = "v1.2.3";
@@ -90,7 +88,7 @@ test("postinstall downloads the matching release asset and the shim runs it", as
       .update(fs.readFileSync(archivePath))
       .digest("hex");
 
-    const downloadBase = "http://claudecc.test/download";
+    const downloadBase = "http://ccc.test/download";
     const restoreHTTP = installHTTPMock(
       new Map([
         [
@@ -112,15 +110,15 @@ test("postinstall downloads the matching release asset and the shim runs it", as
     );
     t.after(restoreHTTP);
 
-    const originalDownloadBase = process.env.CLAUDECC_NPM_GITHUB_DOWNLOAD_BASE;
-    process.env.CLAUDECC_NPM_GITHUB_DOWNLOAD_BASE = downloadBase;
+    const originalDownloadBase = process.env.CCC_NPM_GITHUB_DOWNLOAD_BASE;
+    process.env.CCC_NPM_GITHUB_DOWNLOAD_BASE = downloadBase;
     t.after(() => {
       if (originalDownloadBase === undefined) {
-        delete process.env.CLAUDECC_NPM_GITHUB_DOWNLOAD_BASE;
+        delete process.env.CCC_NPM_GITHUB_DOWNLOAD_BASE;
         return;
       }
 
-      process.env.CLAUDECC_NPM_GITHUB_DOWNLOAD_BASE = originalDownloadBase;
+      process.env.CCC_NPM_GITHUB_DOWNLOAD_BASE = originalDownloadBase;
     });
 
     const postinstall = require(path.join(packageDir, "scripts", "postinstall.js"));
@@ -137,7 +135,7 @@ test("postinstall downloads the matching release asset and the shim runs it", as
 
     const shim = spawnSync(
       "node",
-      [path.join(packageDir, "bin", "claudecc.js"), "--hello", "world"],
+      [path.join(packageDir, "bin", "ccc.js"), "--hello", "world"],
       {
         cwd: packageDir,
         encoding: "utf8",

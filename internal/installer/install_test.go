@@ -21,13 +21,13 @@ import (
 func TestInstallScriptInstallsLatestRelease(t *testing.T) {
 	t.Parallel()
 
-	archiveName := "claudecc_linux_amd64.tar.gz"
+	archiveName := "ccc_linux_amd64.tar.gz"
 	version := "v1.2.3"
 	binaryBody := "#!/bin/sh\necho installed\n"
 
 	tmpDir := t.TempDir()
 	archivePath := filepath.Join(tmpDir, archiveName)
-	writeArchive(t, archivePath, "claudecc", []byte(binaryBody))
+	writeArchive(t, archivePath, "ccc", []byte(binaryBody))
 
 	archiveBytes, err := os.ReadFile(archivePath)
 	require.NoError(t, err)
@@ -37,7 +37,7 @@ func TestInstallScriptInstallsLatestRelease(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/repos/test/claudecc/releases/latest":
+		case "/repos/test/ccc/releases/latest":
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = fmt.Fprintf(w, `{"tag_name":%q}`, version)
 		case "/download/" + version + "/" + archiveName:
@@ -55,17 +55,17 @@ func TestInstallScriptInstallsLatestRelease(t *testing.T) {
 	cmd := exec.Command("bash", installScriptPath(t))
 	cmd.Env = append(os.Environ(),
 		"HOME="+tmpDir,
-		"CLAUDECC_INSTALL_DIR="+installDir,
-		"CLAUDECC_INSTALL_OS=linux",
-		"CLAUDECC_INSTALL_ARCH=amd64",
-		"CLAUDECC_INSTALL_GITHUB_API_BASE="+server.URL+"/repos/test/claudecc/releases",
-		"CLAUDECC_INSTALL_GITHUB_DOWNLOAD_BASE="+server.URL+"/download",
+		"CCC_INSTALL_DIR="+installDir,
+		"CCC_INSTALL_OS=linux",
+		"CCC_INSTALL_ARCH=amd64",
+		"CCC_INSTALL_GITHUB_API_BASE="+server.URL+"/repos/test/ccc/releases",
+		"CCC_INSTALL_GITHUB_DOWNLOAD_BASE="+server.URL+"/download",
 	)
 
 	output, err := cmd.CombinedOutput()
 	require.NoError(t, err, string(output))
 
-	installedPath := filepath.Join(installDir, "claudecc")
+	installedPath := filepath.Join(installDir, "ccc")
 	body, err := os.ReadFile(installedPath)
 	require.NoError(t, err)
 	require.Equal(t, binaryBody, string(body))
@@ -75,7 +75,7 @@ func TestInstallScriptInstallsLatestRelease(t *testing.T) {
 	require.Equal(t, os.FileMode(0o755), info.Mode().Perm())
 
 	text := string(output)
-	require.Contains(t, text, "Installing claudecc "+version)
+	require.Contains(t, text, "Installing ccc "+version)
 	require.Contains(t, text, installedPath)
 }
 
@@ -114,12 +114,12 @@ func writeArchive(t *testing.T, path string, name string, body []byte) {
 func TestInstallScriptRejectsChecksumMismatch(t *testing.T) {
 	t.Parallel()
 
-	archiveName := "claudecc_linux_amd64.tar.gz"
+	archiveName := "ccc_linux_amd64.tar.gz"
 	version := "v9.9.9"
 
 	tmpDir := t.TempDir()
 	archivePath := filepath.Join(tmpDir, archiveName)
-	writeArchive(t, archivePath, "claudecc", []byte("#!/bin/sh\necho broken\n"))
+	writeArchive(t, archivePath, "ccc", []byte("#!/bin/sh\necho broken\n"))
 
 	archiveBytes, err := os.ReadFile(archivePath)
 	require.NoError(t, err)
@@ -141,17 +141,17 @@ func TestInstallScriptRejectsChecksumMismatch(t *testing.T) {
 	cmd := exec.Command("bash", installScriptPath(t))
 	cmd.Env = append(os.Environ(),
 		"HOME="+tmpDir,
-		"CLAUDECC_INSTALL_VERSION="+version,
-		"CLAUDECC_INSTALL_DIR="+installDir,
-		"CLAUDECC_INSTALL_OS=linux",
-		"CLAUDECC_INSTALL_ARCH=amd64",
-		"CLAUDECC_INSTALL_GITHUB_DOWNLOAD_BASE="+server.URL+"/download",
+		"CCC_INSTALL_VERSION="+version,
+		"CCC_INSTALL_DIR="+installDir,
+		"CCC_INSTALL_OS=linux",
+		"CCC_INSTALL_ARCH=amd64",
+		"CCC_INSTALL_GITHUB_DOWNLOAD_BASE="+server.URL+"/download",
 	)
 
 	output, err := cmd.CombinedOutput()
 	require.Error(t, err)
 	require.Contains(t, string(output), "checksum")
-	_, err = os.Stat(filepath.Join(installDir, "claudecc"))
+	_, err = os.Stat(filepath.Join(installDir, "ccc"))
 	require.True(t, os.IsNotExist(err))
 }
 

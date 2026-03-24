@@ -1,8 +1,8 @@
-# Claude Code Continue (claudecc)
+# ccc
 
 [English](./README.md) | [日本語](./README.ja.md)
 
-`claudecc` は、Claude Code のセッションを見つけてすばやく再開するための小さな CLI です。
+`ccc` は、Claude Code のセッションを見つけてすばやく再開するための小さな CLI です。
 
 ## インストール
 
@@ -14,44 +14,43 @@ curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | 
 
 - 最新の GitHub Release をダウンロードします。
 - 対応環境は macOS / Linux、`amd64` / `arm64` です。
-- `claudecc` はデフォルトで `~/.local/bin` に入ります。
+- `ccc` はデフォルトで `~/.local/bin` に入ります。
 
 npm でインストールする場合:
 
 ```bash
-npm install -g claudecc
+npm install -g @ishiyama0530/ccc
 # または
-npx claudecc
+npx @ishiyama0530/ccc
 ```
 
 - `npm install` 時に環境に合う GitHub Release アセットをダウンロードします。
 - 対応環境は macOS / Linux / Windows、`amd64` / `arm64` です。
-- `claudecc` コマンドが入ります。
 
 `~/.local/bin` が PATH に入っていない場合は、シェル設定に追加してください。
 
 インストール先を変える場合:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | env CLAUDECC_INSTALL_DIR="$HOME/bin" bash
+curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | env CCC_INSTALL_DIR="$HOME/bin" bash
 ```
 
 バージョンを固定する場合:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | env CLAUDECC_INSTALL_VERSION=vX.Y.Z bash
+curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | env CCC_INSTALL_VERSION=vX.Y.Z bash
 ```
 
 ## 使い方
 
 ```bash
-claudecc
-claudecc -d <dir>
-claudecc -n <count>
-claudecc <query>
-claudecc -d <dir> <query>
-claudecc -n <count> <query>
-claudecc --dir <dir> <query>
+ccc
+ccc -d <dir>
+ccc -n <count>
+ccc <query>
+ccc -d <dir> <query>
+ccc -n <count> <query>
+ccc --dir <dir> <query>
 ```
 
 - デフォルトでは、現在の作業ディレクトリに対応する Claude 履歴を検索します。
@@ -67,12 +66,12 @@ claudecc --dir <dir> <query>
 例:
 
 ```bash
-claudecc
-claudecc -n 200
-claudecc bug
-claudecc -d ~/src/app
-claudecc -d ~/src/app -n 50 timeout
-claudecc -d ~/src/app timeout
+ccc
+ccc -n 200
+ccc bug
+ccc -d ~/src/app
+ccc -d ~/src/app -n 50 timeout
+ccc -d ~/src/app timeout
 ```
 
 ## キー操作
@@ -93,8 +92,8 @@ make build
 make test
 make lint
 make run QUERY="bug"
-# インストールせずにローカルの bin/claudecc を一時的に実行
-PATH="$PWD/bin:$PATH" claudecc bug
+# インストールせずにローカルの bin/ccc を一時的に実行
+PATH="$PWD/bin:$PATH" ccc bug
 ```
 
 ## リリース
@@ -105,4 +104,4 @@ export NPM_TOKEN=...
 make release VERSION=vX.Y.Z
 ```
 
-`make release` は、`install.sh` が使う GitHub Release を公開し、そのあと `claudecc` を npm に公開します。
+`make release` は、`install.sh` が使う GitHub Release を公開し、そのあと `@ishiyama0530/ccc` を npm に公開します。

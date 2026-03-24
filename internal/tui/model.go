@@ -278,7 +278,7 @@ func (model Model) mainPanelHeight() int {
 func (model Model) renderListPanel(width int) string {
 	contentWidth := panelContentWidth(width)
 	lines := []string{
-		sectionHeaderStyle.Render("claudecc candidates"),
+		sectionHeaderStyle.Render("ccc candidates"),
 		listSummaryStyle.Render(candidateCountLabel(len(model.Candidates))),
 		"",
 	}

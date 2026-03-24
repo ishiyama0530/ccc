@@ -1,12 +1,12 @@
-# claudecc Agent Guide
+# ccc Agent Guide
 
 ## Purpose
-- `claudecc` is a speed-first Go CLI for searching Claude Code transcript `.jsonl` files and resuming the right session quickly.
+- `ccc` is a speed-first Go CLI for searching Claude Code transcript `.jsonl` files and resuming the right session quickly.
 - The strictest product constraint is stdout purity for the single-match case: only `claude --resume <session_id>` may be printed.
 - The default lookup target is the Claude history directory that corresponds to the current working directory. `-d/--dir` swaps in another working directory, not another raw transcript root.
 
 ## Architecture Map
-- `cmd/ccc`: CLI entrypoint for the `claudecc` command.
+- `cmd/ccc`: CLI entrypoint.
 - `internal/app`: argument parsing and `0/1/many` orchestration.
 - `internal/search`: recursive walk, parallel scan, preview generation.
 - `internal/session`: line-oriented transcript extraction and noise filtering.
@@ -48,7 +48,7 @@
 
 ## Release Workflow
 - Use `make release VERSION=vX.Y.Z`.
-- The command validates release preflight, tags and pushes the release tag, runs GoReleaser for the GitHub release assets used by `install.sh`, then publishes `claudecc` to npm.
+- The command validates release preflight, tags and pushes the release tag, runs GoReleaser for the GitHub release assets used by `install.sh`, then publishes `@ishiyama0530/ccc` to npm.
 - `GITHUB_TOKEN` and `NPM_TOKEN` must be set before running the release target.
 
 ## Acceptance Checklist

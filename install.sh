@@ -2,13 +2,13 @@
 
 set -euo pipefail
 
-REPO="${CLAUDECC_INSTALL_REPO:-${CCC_INSTALL_REPO:-ishiyama0530/ccc}}"
-API_BASE="${CLAUDECC_INSTALL_GITHUB_API_BASE:-${CCC_INSTALL_GITHUB_API_BASE:-https://api.github.com/repos/${REPO}/releases}}"
-DOWNLOAD_BASE="${CLAUDECC_INSTALL_GITHUB_DOWNLOAD_BASE:-${CCC_INSTALL_GITHUB_DOWNLOAD_BASE:-https://github.com/${REPO}/releases/download}}"
-INSTALL_DIR="${CLAUDECC_INSTALL_DIR:-${CCC_INSTALL_DIR:-${HOME}/.local/bin}}"
-REQUESTED_VERSION="${CLAUDECC_INSTALL_VERSION:-${CCC_INSTALL_VERSION:-}}"
-REQUESTED_OS="${CLAUDECC_INSTALL_OS:-${CCC_INSTALL_OS:-}}"
-REQUESTED_ARCH="${CLAUDECC_INSTALL_ARCH:-${CCC_INSTALL_ARCH:-}}"
+REPO="${CCC_INSTALL_REPO:-ishiyama0530/ccc}"
+API_BASE="${CCC_INSTALL_GITHUB_API_BASE:-https://api.github.com/repos/${REPO}/releases}"
+DOWNLOAD_BASE="${CCC_INSTALL_GITHUB_DOWNLOAD_BASE:-https://github.com/${REPO}/releases/download}"
+INSTALL_DIR="${CCC_INSTALL_DIR:-${HOME}/.local/bin}"
+REQUESTED_VERSION="${CCC_INSTALL_VERSION:-}"
+REQUESTED_OS="${CCC_INSTALL_OS:-}"
+REQUESTED_ARCH="${CCC_INSTALL_ARCH:-}"
 
 main() {
   require_command tar
@@ -18,28 +18,28 @@ main() {
   os="$(detect_os)"
   arch="$(detect_arch)"
   version="$(resolve_version)"
-  archive_name="claudecc_${os}_${arch}.tar.gz"
+  archive_name="ccc_${os}_${arch}.tar.gz"
   checksum_name="checksums.txt"
   tmpdir="$(mktemp -d)"
   archive_path="${tmpdir}/${archive_name}"
   checksums_path="${tmpdir}/${checksum_name}"
-  binary_path="${tmpdir}/claudecc"
+  binary_path="${tmpdir}/ccc"
 
   trap 'rm -rf -- '"'"${tmpdir}"'"'' EXIT
 
-  echo "Installing claudecc ${version} for ${os}/${arch}..."
+  echo "Installing ccc ${version} for ${os}/${arch}..."
   download_to "${DOWNLOAD_BASE}/${version}/${archive_name}" "${archive_path}"
   download_to "${DOWNLOAD_BASE}/${version}/${checksum_name}" "${checksums_path}"
 
   verify_checksum "${archive_path}" "${checksums_path}" "${archive_name}"
 
-  tar -xzf "${archive_path}" -C "${tmpdir}" claudecc
+  tar -xzf "${archive_path}" -C "${tmpdir}" ccc
   mkdir -p "${INSTALL_DIR}"
-  install_binary "${binary_path}" "${INSTALL_DIR}/claudecc"
+  install_binary "${binary_path}" "${INSTALL_DIR}/ccc"
 
-  echo "claudecc installed to ${INSTALL_DIR}/claudecc"
+  echo "ccc installed to ${INSTALL_DIR}/ccc"
   if ! path_contains "${INSTALL_DIR}"; then
-    echo "Add ${INSTALL_DIR} to your PATH to run claudecc from a new shell." >&2
+    echo "Add ${INSTALL_DIR} to your PATH to run ccc from a new shell." >&2
   fi
 }
 
@@ -90,7 +90,7 @@ resolve_version() {
   )"
 
   if [[ -z "${version}" ]]; then
-    echo "failed to determine the latest claudecc release" >&2
+    echo "failed to determine the latest ccc release" >&2
     exit 1
   fi
 

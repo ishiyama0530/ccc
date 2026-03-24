@@ -6,8 +6,6 @@
 *.dylib
 bin/
 dist/
-!packaging/npm/bin/
-!packaging/npm/bin/*.js
 
 # Test binary, built with `go test -c`
 *.test

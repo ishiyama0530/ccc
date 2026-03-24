@@ -1,15 +1,15 @@
 version: 2
 
-project_name: claudecc
+project_name: ccc
 
 before:
   hooks:
     - go mod tidy
 
 builds:
-  - id: claudecc
+  - id: ccc
     main: ./cmd/ccc
-    binary: claudecc
+    binary: ccc
     env:
       - CGO_ENABLED=0
     goos:
@@ -23,9 +23,9 @@ builds:
       - -s -w -X main.version={{ .Version }}
 
 archives:
-  - id: claudecc
+  - id: ccc
     ids:
-      - claudecc
+      - ccc
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     formats:
       - tar.gz
