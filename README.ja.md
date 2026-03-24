@@ -1,70 +1,84 @@
-# Claude Code Continue (ccc)
+# ✨ # Claude Code Continue (ccc)
 
 [English](./README.md) | [日本語](./README.ja.md)
 
-`ccc` は、Claude Code のセッションを見つけてすばやく再開するための小さな CLI です。
+> Claude Code の「あの会話どこだっけ？」を、数秒で終わらせるための CLI。
 
-## インストール
+<p align="center">
+  <img src="./docs/images/ccc-tui.png" alt="ccc の TUI セッションピッカーとプレビュー画面" width="1100" />
+</p>
 
-まずはこれでインストールできます。
+`ccc` は、Claude Code の履歴から今ほしいセッションをすばやく見つけて、そのまま気持ちよく再開するための小さな CLI です。今いるプロジェクトにひもづく履歴を探してくれるので、「履歴を漁る時間」をかなり減らせます。
+
+## 😩 なんで ccc が必要？
+
+Claude Code を使い込むほど、セッション履歴はどんどん増えていきます。
+
+つらいのは `claude --resume` そのものではなく、「再開したい会話を探し当てるまで」が地味に長いことです。
+
+`ccc` はそこを楽にします。現在の作業ディレクトリに対応する Claude 履歴を絞り込み、内容をプレビューしながら、軽い TUI で迷わず再開できます。
+
+## 🚀 クイックスタート
+
+普段使いなら、まずはこれがおすすめです。
+
+```bash
+npm install -g @ishiyama0530/ccc
+ccc
+```
+
+> 💡 継続的に使うなら `npm install -g @ishiyama0530/ccc` がいちばん快適です。入れてしまえば、あとは `ccc` だけで起動できます。
+
+まずは試すだけでいいなら:
+
+```bash
+npx @ishiyama0530/ccc
+```
+
+GitHub Release から入れたい場合:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | bash
 ```
 
-- 最新の GitHub Release をダウンロードします。
-- 対応環境は macOS / Linux、`amd64` / `arm64` です。
-- `ccc` はデフォルトで `~/.local/bin` に入ります。
+- `npm install -g @ishiyama0530/ccc`: おすすめ。macOS / Linux / Windows の `amd64` / `arm64` に対応
+- `npx @ishiyama0530/ccc`: まず触ってみたいとき向け。対応環境は npm install と同じ
+- `curl -fsSL ... | bash`: macOS / Linux の `amd64` / `arm64` に対応。デフォルトでは `~/.local/bin` に `ccc` を入れます
 
-npm でインストールする場合:
-
-```bash
-npm install -g @ishiyama0530/ccc
-# または
-npx @ishiyama0530/ccc
-```
-
-- 普段使いなら `npm install -g @ishiyama0530/ccc` で入れて、`ccc` だけで起動するのがおすすめ。
-- `npm install` 時に環境に合う GitHub Release アセットをダウンロードします。
-- 対応環境は macOS / Linux / Windows、`amd64` / `arm64` です。
-
-`~/.local/bin` が PATH に入っていない場合は、シェル設定に追加してください。
-
-インストール先を変える場合:
+シェルインストーラで保存先やバージョンを変えたい場合:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | env CCC_INSTALL_DIR="$HOME/bin" bash
-```
-
-バージョンを固定する場合:
-
-```bash
 curl -fsSL https://raw.githubusercontent.com/ishiyama0530/ccc/main/install.sh | env CCC_INSTALL_VERSION=vX.Y.Z bash
 ```
 
-## 使い方
+## ❤️ 使いたくなるポイント
+
+- ⚡ 目的の Claude セッションまで最短で戻れる
+- 🎯 今いるプロジェクト基準で探すので、候補がちゃんと絞られる
+- 👀 再開前に中身を見ながら確認できる
+
+## 🧠 どう使う？
 
 ```bash
 ccc
-ccc -d <dir>
-ccc -n <count>
-ccc <query>
-ccc -d <dir> <query>
-ccc -n <count> <query>
-ccc --dir <dir> <query>
+ccc bug
+ccc -d ~/src/app timeout
+ccc -n 200
 ```
 
-- デフォルトでは、現在の作業ディレクトリに対応する Claude 履歴を検索します。
-- `-d` / `--dir` で検索対象の作業ディレクトリを切り替えます。
-- `-n` / `--limit` で表示する履歴件数の上限を指定できます。デフォルトは `100` 件です。
-- クエリを省略すると、対象ディレクトリのセッション履歴をデフォルトで最大 `100` 件まで一覧表示します。
-- 検索は大文字小文字を区別しません。
-- 一致が見つかると TUI を開きます。
-- 追加引数は下部のコマンドバーに入力します。`claude --resume <session_id>` は固定で、その後ろに引数を追加します。
-- TTY なしで一致が見つかった場合はエラー終了します。
-- 0 件なら stderr にエラーを出して非 0 で終了します。
+- `ccc` をプロジェクトの中で実行します
+- デフォルトでは、現在の作業ディレクトリに対応する Claude 履歴を検索します
+- `-d` / `--dir` で別の作業ディレクトリを対象にできます
+- `-n` / `--limit` で表示する履歴件数の上限を指定できます。デフォルトは `100`
+- クエリなしなら、対象ディレクトリのセッション履歴を最大 `100` 件まで一覧表示します
+- 検索は大文字小文字を区別しません
+- 一致が見つかると TUI を開きます
+- 下部のコマンドバーでは `claude --resume <session_id>` を固定したまま、追加の Claude 引数だけを足せます
+- TTY なしで一致が見つかった場合はエラー終了します
+- 0 件なら stderr にエラーを出して非 0 で終了します
 
-例:
+## 💡 コマンド例
 
 ```bash
 ccc
@@ -72,13 +86,13 @@ ccc -n 200
 ccc bug
 ccc -d ~/src/app
 ccc -d ~/src/app -n 50 timeout
-ccc -d ~/src/app timeout
+ccc --dir ~/src/app timeout
 ```
 
-## キー操作
+## ⌨️ キー操作
 
 - `↑` / `↓`: 移動
-- `Shift+↑` / `Shift+↓`: プレビューを1行ずつスクロール
+- `Shift+↑` / `Shift+↓`: プレビューを 1 行ずつスクロール
 - `Enter`: 選択したセッションを再開
 - 文字入力: 追加引数を入力
 - `Backspace`: 追加引数を編集
@@ -86,7 +100,7 @@ ccc -d ~/src/app timeout
 - `Ctrl+U` / `Ctrl+D`: プレビューを速くスクロール
 - `esc` / `ctrl+c`: 終了
 
-## 開発
+## 🛠️ 開発
 
 ```bash
 make build
@@ -97,7 +111,7 @@ make run QUERY="bug"
 PATH="$PWD/bin:$PATH" ccc bug
 ```
 
-## リリース
+## 📦 リリース
 
 ```bash
 export GITHUB_TOKEN=...
